@@ -1,0 +1,40 @@
+name: mercado-libre-ai
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mercado-libre-ai:latest
+    container_name: mercado_libre_ai
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8501}:8501"
+    environment:
+      DATA_DIR: /app/data
+      MODELS_DIR: /app/models
+      # Carga el CSV simulado la primera vez (si no hay sesión guardada).
+      AUTO_LOAD_DEMO: "${AUTO_LOAD_DEMO:-1}"
+      STREAMLIT_SERVER_HEADLESS: "true"
+      STREAMLIT_BROWSER_GATHER_USAGE_STATS: "false"
+    volumes:
+      # Persistencia: datos cargados y modelos entrenados sobreviven a reinicios.
+      - ./data:/app/data
+      - ./models:/app/models
+    # Mismo UID/GID que el usuario del host para escribir en los volúmenes.
+    user: "${UID:-1000}:${GID:-1000}"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8501/_stcore/health', timeout=3).read().strip()==b'ok' else 1)"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+data/*
+!data/.gitkeep
+!data/demo_simulado.csv
+data/current/
+data/uploads/
+models/*
+!models/.gitkeep
+.venv/
+.env
+*.log
