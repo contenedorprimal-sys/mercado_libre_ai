@@ -5,8 +5,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: mercado-libre-ai:latest
-    container_name: mercado_libre_ai
+    image: mercado-libre-ai:v1
+    container_name: mercado_libre_ai-v1
     restart: unless-stopped
     ports:
       - "${APP_PORT:-8501}:8501"

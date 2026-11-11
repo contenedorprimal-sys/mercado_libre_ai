@@ -33,7 +33,8 @@ st.set_page_config(
     page_title="ML Analytics IA · Mercado Libre",
     page_icon="📦",
     layout="wide",
-    initial_sidebar_state="expanded",
+    # "auto": expandida en escritorio, colapsada en pantallas estrechas.
+    initial_sidebar_state="auto",
 )
 
 DATA_DIR = Path(os.getenv("DATA_DIR", "data"))
@@ -60,16 +61,49 @@ SECCIONES = [
     "Recomendaciones inteligentes",
     "Reportes",
 ]
-ICONOS = {
-    "Inicio": "🏠",
-    "Carga de datos": "📤",
-    "Análisis exploratorio": "📊",
-    "Rentabilidad": "💰",
-    "Predicción de devoluciones": "🔄",
-    "Comparación de modelos": "⚖️",
-    "Recomendaciones inteligentes": "💡",
-    "Reportes": "📄",
+# Set de iconos vectoriales: un solo lenguaje visual (trazo 1.75, remates redondos).
+ICONS = {
+    "marca": '<path d="M4 18.5V11"/><path d="M9.3 18.5V6.5"/><path d="M14.7 18.5v-6"/>'
+             '<path d="M20 18.5V4.5"/><path d="M2.5 21h19"/>',
+    "datos": '<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.66 3.13 3 7 3s7-1.34 7-3V6"/>'
+             '<path d="M5 12v6c0 1.66 3.13 3 7 3s7-1.34 7-3v-6"/>',
+    "inicio": '<path d="M4 10.5 12 4l8 6.5"/><path d="M6.5 9.5V19a1 1 0 0 0 1 1H10v-4.5h4V20h2.5a1 1 0 0 0 1-1V9.5"/>',
+    "carga": '<path d="M12 15.5V4"/><path d="m7.5 8.5 4.5-4.5 4.5 4.5"/>'
+             '<path d="M4.5 14.5v3.5a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-3.5"/>',
+    "exploratorio": '<path d="M4.5 19.5V11"/><path d="M9.8 19.5V6.5"/><path d="M15.2 19.5v-5.5"/>'
+                    '<path d="M20.5 19.5V4.5"/>',
+    "rentabilidad": '<path d="M4 16.5 9.5 11l3.5 3.5L20 7"/><path d="M15 7h5v5"/>',
+    "devoluciones": '<path d="M9.5 5.5 4.5 10.5l5 5"/><path d="M4.5 10.5H15a4.5 4.5 0 0 1 0 9h-4"/>',
+    "comparacion": '<path d="M12 4v16"/><path d="M7.5 20h9"/><path d="M4 8.5h16"/>'
+                   '<path d="M4 8.5 1.8 13.2a2.6 2.6 0 0 0 4.4 0Z"/>'
+                   '<path d="M20 8.5 17.8 13.2a2.6 2.6 0 0 0 4.4 0Z"/>',
+    "recomendaciones": '<path d="M9.5 18.5h5"/><path d="M10 21h4"/>'
+                       '<path d="M12 3.5a5.5 5.5 0 0 0-3.2 9.95c.6.45 1 1.15 1 1.9v.15h4.4v-.15c0-.75.4-1.45 1-1.9A5.5 5.5 0 0 0 12 3.5Z"/>',
+    "reportes": '<path d="M6.5 3.5h7l4.5 4.5v12a1 1 0 0 1-1 1h-10.5a1 1 0 0 1-1-1v-15a1 1 0 0 1 1-1Z"/>'
+                '<path d="M13.5 3.5V8h4.5"/><path d="M8.5 13h7"/><path d="M8.5 16.5h7"/>',
+    "privacidad": '<path d="M12 3.5 5 6v5.5c0 4.2 2.9 7.6 7 9 4.1-1.4 7-4.8 7-9V6Z"/>'
+                  '<path d="m9 12 2.2 2.2L15.5 10"/>',
+    "validacion": '<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5.2l3.3 2"/>',
+    "modelos": '<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/>'
+               '<rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>',
+    "reloj": '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 1.8"/>',
+    "hoja": '<path d="M6.5 3.5h7l4.5 4.5v12a1 1 0 0 1-1 1h-10.5a1 1 0 0 1-1-1v-15a1 1 0 0 1 1-1Z"/>'
+            '<path d="M13.5 3.5V8h4.5"/>',
+    "alerta": '<path d="M12 4.5 2.8 20h18.4Z"/><path d="M12 10v4.2"/><path d="M12 17.3h0"/>',
+    "ok": '<circle cx="12" cy="12" r="8.5"/><path d="m8.2 12.2 2.6 2.6 5-5.4"/>',
 }
+
+
+def _svg(key: str, size: int = 24) -> str:
+    """Icono SVG del set. Clave desconocida -> cadena vacía (nunca emoji suelto)."""
+    body = ICONS.get(key, "")
+    if not body:
+        return ""
+    return (
+        f'<svg width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" '
+        'stroke="currentColor" stroke-width="1.75" stroke-linecap="round" '
+        f'stroke-linejoin="round" aria-hidden="true">{body}</svg>'
+    )
 S = st.session_state
 
 # --------------------------------------------------------------------------- #
@@ -78,11 +112,47 @@ S = st.session_state
 st.markdown(
     """
 <style>
-  :root { --verde:#1E9E5A; --azul:#0B2545; --fondo:#F5F8F6; }
+  /* ---------- tokens (modo claro; contrastes calculados sobre WCAG AA) ---------- */
+  :root {
+    --texto:#0B2545;       /* titulos y cifras        15,39:1 sobre #FFFFFF */
+    --texto-2:#45556B;     /* cuerpo secundario        7,60:1 sobre #FFFFFF */
+    --texto-3:#55677C;     /* metadatos (>=13 px)      5,21:1 sobre #EEF4F0 */
+    --acento:#1E9E5A;      /* rellenos e indicadores   3,45:1 vs #FFFFFF */
+    --acento-osc:#157A47;  /* relleno con texto blanco 5,38:1 */
+    --linea:#E3ECE6;
+    --linea-2:#D7E4DC;
+    --radio:14px;
+    --fuente:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",
+             Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+
+  /* ---------- una sola tipografía; los iconos Material conservan la suya ---------- */
+  html body, html body *:not([data-testid="stIconMaterial"]) { font-family:var(--fuente) !important; }
+  [data-testid="stIconMaterial"] { font-family:"Material Symbols Rounded" !important; }
+
   .stApp { background: linear-gradient(180deg,#F5F8F6 0%,#EEF4F0 100%); }
   #MainMenu, footer { visibility: hidden; }
   [data-testid="stToolbar"], [data-testid="stDecoration"],
   [data-testid="stStatusWidget"], [data-testid="stAppDeployButton"] { display:none !important; }
+
+  /* ---------- jerarquía tipográfica ---------- */
+  .stApp p { font-size:15px; line-height:1.5; }
+  .stApp h1 { font-size:1.875rem !important; font-weight:700 !important;
+              letter-spacing:-.02em !important; line-height:1.2 !important;
+              color:var(--texto) !important; }
+  .stApp h2 { font-size:1.375rem !important; font-weight:700 !important;
+              letter-spacing:-.01em !important; color:var(--texto) !important; }
+  .stApp h3 { font-size:1.125rem !important; font-weight:700 !important; color:var(--texto) !important; }
+  .stApp h4 { font-size:.9375rem !important; font-weight:700 !important; color:var(--texto) !important; }
+  /* excepciones: mínimos de lectura (13 px) y cifras destacadas */
+  [data-testid="stCaptionContainer"] p { font-size:13.5px !important; }
+  [data-testid="stWidgetLabel"] p { font-size:13.5px !important; font-weight:600 !important; }
+  [data-testid="stMetricLabel"] p { font-size:13px !important; font-weight:600 !important;
+                                    letter-spacing:.02em !important; }
+  [data-testid="stMetricValue"] p { font-size:1.45rem !important; font-weight:700 !important;
+                                    font-variant-numeric:tabular-nums; letter-spacing:-.01em !important; }
+  [data-testid="stTab"] p { font-size:15px !important; font-weight:600 !important; }
+  [data-testid="stRadioOption"] p { font-size:15px !important; }
 
   /* ---------- barra lateral ---------- */
   [data-testid="stSidebar"] {
@@ -92,107 +162,190 @@ st.markdown(
   [data-testid="stSidebar"] { color:#EAF2EE; }
   [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2,
   [data-testid="stSidebar"] h3, [data-testid="stSidebar"] h4,
+  [data-testid="stSidebar"] h5, [data-testid="stSidebar"] h6,
   [data-testid="stSidebar"] p, [data-testid="stSidebar"] label,
+  [data-testid="stSidebar"] li, [data-testid="stSidebar"] a,
   [data-testid="stSidebar"] [data-testid="stMarkdownContainer"],
   [data-testid="stSidebar"] [data-testid="stCaptionContainer"] { color:#EAF2EE; }
-  [data-testid="stSidebar"] .stRadio label {
-      border-radius:10px; padding:6px 8px; transition:background .15s;
+  [data-testid="stSidebar"] h4, [data-testid="stSidebar"] h5,
+  [data-testid="stSidebar"] h6 { color:#8FE3B5 !important;
+                                 letter-spacing:.1em; text-transform:uppercase;
+                                 font-size:.8125rem !important; }
+  [data-testid="stSidebar"] hr { border-color:rgba(255,255,255,.16); }
+  [data-testid="stSidebar"] [data-testid="stHeaderActionElements"] a { color:rgba(234,242,238,.75); }
+
+  /* navegación: la selección se comunica con relleno y peso, no solo con color */
+  [data-testid="stSidebar"] [data-testid="stRadioOption"] {
+      border-radius:10px; padding:9px 10px !important;
+      transition:background-color .15s ease;
   }
-  [data-testid="stSidebar"] .stRadio label:hover { background:rgba(255,255,255,.08); }
-  [data-testid="stSidebar"] [data-baseweb="radio"] div[aria-checked="true"] {
-      background:rgba(30,158,90,.35);
+  [data-testid="stSidebar"] [data-testid="stRadioOption"]:hover { background:rgba(255,255,255,.08); }
+  [data-testid="stSidebar"] [data-testid="stRadioOption"][data-selected="true"] {
+      background:rgba(255,255,255,.13);
+      box-shadow:inset 3px 0 0 #35C77E;
   }
+  [data-testid="stSidebar"] [data-testid="stRadioOption"][data-selected="true"] p {
+      font-weight:650 !important; color:#FFFFFF !important;
+  }
+  [data-testid="stSidebar"] [data-testid="stRadioOption"]:focus-visible {
+      outline:2px solid #8FE3B5; outline-offset:1px;
+  }
+  /* el punto del radio se oculta: el estado ya va en el relleno y en el peso */
+  [data-testid="stSidebar"] [data-testid="stRadioOption"] > div > div:first-child { display:none; }
+
+  /* ---------- marca y fichas de la barra lateral ---------- */
   .brand { display:flex; gap:.7rem; align-items:center; margin:.2rem 0 1.1rem; }
   .brand .logo {
       width:44px;height:44px;border-radius:12px;display:grid;place-items:center;
-      background:linear-gradient(135deg,#1E9E5A,#2EC27E); font-size:1.35rem;
-      box-shadow:0 6px 18px rgba(30,158,90,.35);
+      background:linear-gradient(135deg,#157A47,#2EC27E); color:#fff;
+      box-shadow:0 6px 18px rgba(0,0,0,.28);
   }
-  .brand b { display:block; font-size:1.05rem; line-height:1.1; color:#fff; }
-  .brand span { font-size:.72rem; color:#9FC4B4; letter-spacing:.06em; text-transform:uppercase; }
+  .brand b { display:block; font-size:1.0625rem !important; line-height:1.2; color:#fff !important; }
+  .brand span { font-size:.8125rem !important; color:#A9C4D6 !important;
+                letter-spacing:.08em; text-transform:uppercase;
+                display:flex; align-items:center; gap:.4rem; }
+  .brand span svg { width:15px; height:15px; flex:none; opacity:.9; }
+  .side-card b svg { width:16px; height:16px; vertical-align:-3px; margin-right:.4rem; }
+  .pill em { font-style:normal; display:inline-flex; align-items:center;
+             gap:.4rem; color:#8FE3B5; }
+  .pill em svg { width:14px; height:14px; }
   .side-card {
-      background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.1);
-      border-radius:12px; padding:.75rem .85rem; margin:.35rem 0 .6rem; font-size:.8rem;
-      line-height:1.5; color:#D7E7DF;
+      background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12);
+      border-radius:12px; padding:.8rem .9rem; margin:.35rem 0 .6rem;
+      font-size:.875rem; line-height:1.5; color:#D7E7DF !important;
   }
-  .side-card b { color:#fff; }
-  .dot { display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px; }
-  .dot.on { background:#2EC27E; box-shadow:0 0 0 3px rgba(46,194,126,.18); }
+  .side-card b { display:block; color:#fff !important; font-size:.9375rem !important;
+                 margin-bottom:.35rem; }
+  .side-card .kv { display:flex; justify-content:space-between; gap:.75rem;
+                   padding:.14rem 0; font-size:.8125rem !important; }
+  .side-card .kv > span:first-child { color:#A9C4D6 !important; }
+  .side-card .kv > span:last-child { color:#EAF2EE !important; text-align:right; }
+  .dot { display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;
+         flex:none; }
+  .dot.on { background:#35C77E; box-shadow:0 0 0 3px rgba(53,199,126,.2); }
   .dot.off { background:#F4A261; }
 
   /* ---------- encabezado hero ---------- */
   .hero {
-      position:relative; overflow:hidden; border-radius:20px; padding:2rem 2.2rem;
-      background: radial-gradient(1100px 320px at 12% -20%,rgba(46,194,126,.35),transparent 60%),
-                  linear-gradient(120deg,#0B2545 0%,#13315C 55%,#0E3B2E 100%);
-      color:#fff; margin-bottom:1.2rem; box-shadow:0 18px 40px rgba(11,37,69,.18);
+      position:relative; overflow:hidden; border-radius:18px;
+      padding:clamp(1.5rem,3vw,2.1rem) clamp(1.25rem,3vw,2.25rem);
+      background:linear-gradient(125deg,#0B2545 0%,#123A63 58%,#0E3B2E 100%);
+      color:#fff; margin-bottom:1.25rem; box-shadow:0 14px 34px rgba(11,37,69,.16);
+      font-size:.9375rem;
   }
-  .hero:after {
-      content:""; position:absolute; right:-60px; top:-70px; width:280px; height:280px;
-      border-radius:50%; background:radial-gradient(circle,rgba(30,158,90,.45),transparent 65%);
-  }
-  .hero .kicker { font-size:.72rem; letter-spacing:.18em; text-transform:uppercase; color:#8FE3B5; }
-  .hero h1 { color:#fff !important; font-size:2.05rem; line-height:1.15; margin:.45rem 0 .6rem; }
-  .hero p { color:#C8D9D2; max-width:780px; margin:0 0 1rem; font-size:.95rem; }
+  .hero .kicker { font-size:.8125rem !important; letter-spacing:.14em;
+                  text-transform:uppercase; color:#8FE3B5 !important; font-weight:600; }
+  .hero h1 { color:#fff !important; font-size:clamp(1.6rem,2.4vw,2rem) !important;
+             line-height:1.15; margin:.5rem 0 .6rem; }
+  .hero p { color:#C8D9D2 !important; max-width:72ch; margin:0 0 1.05rem;
+            font-size:.9375rem !important; }
   .pill {
-      display:inline-block; padding:.3rem .7rem; margin:.15rem .35rem .15rem 0; border-radius:999px;
-      background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.18);
-      font-size:.74rem; color:#EAF2EE;
+      display:inline-block; padding:.32rem .72rem; margin:.2rem .35rem .2rem 0;
+      border-radius:999px; background:rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.20);
+      font-size:.8125rem !important; color:#EAF2EE !important;
   }
 
-  /* ---------- títulos ---------- */
-  h1,h2,h3 { color:var(--azul) !important; letter-spacing:-.01em; }
-  h1 { font-weight:800; }
-  .page-head { display:flex; align-items:center; gap:.7rem; margin:.2rem 0 1rem; }
+  /* ---------- encabezado de sección ---------- */
+  .page-head { display:flex; align-items:center; gap:.85rem; margin:.2rem 0 1.15rem; }
+  .page-head > div:last-child { min-width:0; }
   .page-head .icon {
-      width:46px;height:46px;border-radius:13px;display:grid;place-items:center;font-size:1.35rem;
-      background:#E4F4EA; border:1px solid #C9E8D5;
+      width:46px;height:46px;flex:none;border-radius:13px;display:grid;place-items:center;
+      background:#E4F4EA; border:1px solid #C9E8D5; color:var(--acento-osc);
   }
-  .page-head h1 { margin:0; font-size:1.7rem; }
-  .page-head p { margin:0; color:#5A6B7B; font-size:.85rem; }
+  .page-head .icon svg { display:block; }
+  .page-head h1 { margin:0 !important; font-size:1.75rem !important; }
+  .page-head p { margin:0 !important; color:var(--texto-2) !important;
+                 font-size:.9375rem !important; }
 
   /* ---------- métricas ---------- */
   div[data-testid="stMetric"] {
-      background:#fff; border:1px solid #E3ECE6; border-left:5px solid var(--verde);
-      border-radius:14px; padding:.85rem 1rem; box-shadow:0 4px 14px rgba(11,37,69,.05);
+      background:#fff; border:1px solid var(--linea);
+      border-radius:var(--radio); padding:.9rem 1rem;
+      box-shadow:0 1px 2px rgba(11,37,69,.05);
   }
-  div[data-testid="stMetric"] label { color:#5A6B7B !important; font-size:.78rem; }
-  div[data-testid="stMetricValue"] { color:var(--azul); font-weight:800; font-size:1.3rem; }
+  div[data-testid="stMetric"] label { color:var(--texto-2) !important; }
 
-  /* ---------- contenedores / pestañas / botones ---------- */
-  div[data-testid="stVerticalBlockBorderWrapper"] {
-      border-radius:16px; border-color:#E3ECE6 !important; background:#fff;
+  /* ---------- pestañas ---------- */
+  .stTabs [role="tablist"] { gap:.15rem; border-bottom:1px solid var(--linea); }
+  .stTabs [data-testid="stTab"] {
+      padding:.8rem .7rem !important; border-radius:9px 9px 0 0;
+      color:var(--texto-2) !important; transition:color .15s ease;
   }
-  .stTabs [data-baseweb="tab-list"] { gap:.35rem; }
-  .stTabs [data-baseweb="tab"] {
-      border-radius:10px 10px 0 0; padding:.45rem .9rem; font-weight:600; color:#5A6B7B;
+  .stTabs [data-testid="stTab"]:hover { color:var(--texto) !important; }
+  .stTabs [data-testid="stTab"][aria-selected="true"] { color:var(--texto) !important; }
+  .stTabs [data-testid="stTab"] .react-aria-SelectionIndicator {
+      height:3px !important; top:auto !important; bottom:-1px !important;
+      border-radius:999px !important; background:var(--acento-osc) !important;
   }
-  .stTabs [aria-selected="true"] { color:var(--azul); background:#fff; }
+  .stTabs [data-testid="stTab"]:focus-visible {
+      outline:2px solid var(--acento-osc); outline-offset:-2px;
+  }
+
+  /* ---------- botones ---------- */
   .stButton > button, .stDownloadButton > button {
-      border-radius:10px; font-weight:600; border:1px solid #D7E4DC;
+      border-radius:10px !important; font-weight:600 !important;
+      font-size:.9375rem !important; border:1px solid var(--linea-2) !important;
+      background:#fff !important; color:var(--texto) !important;
+      transition:background-color .15s ease, border-color .15s ease;
   }
-  .stButton > button[kind="primary"], .stDownloadButton > button[kind="primary"] {
-      background:linear-gradient(135deg,#1E9E5A,#2EC27E); border:0; color:#fff;
-      box-shadow:0 6px 16px rgba(30,158,90,.28);
+  .stButton > button:hover, .stDownloadButton > button:hover {
+      background:#F1F6F3 !important; border-color:#BCD2C6 !important;
   }
-  .stButton > button[kind="primary"]:hover { filter:brightness(1.05); }
-  div[data-testid="stDataFrame"] { border:1px solid #E3ECE6; border-radius:12px; overflow:hidden; }
+  button[kind="primary"] {
+      background:var(--acento-osc) !important; background-image:none !important;
+      border-color:var(--acento-osc) !important; color:#fff !important;
+      box-shadow:0 4px 12px rgba(21,122,71,.24);
+  }
+  button[kind="primary"]:hover {
+      background:#11693C !important; border-color:#11693C !important; color:#fff !important;
+  }
+  :is(.stButton,.stDownloadButton) > button:focus-visible, button[kind="primary"]:focus-visible {
+      outline:2px solid var(--acento-osc) !important; outline-offset:2px !important;
+  }
+  button:disabled { opacity:.55; }
+
+  /* ---------- tablas y avisos ---------- */
+  div[data-testid="stDataFrame"] { border:1px solid var(--linea); border-radius:12px; overflow:hidden; }
   .nota {
-      background:#FFF8EC; border:1px solid #F4D9A6; border-left:5px solid #F4A261;
-      border-radius:12px; padding:.75rem 1rem; color:#6B4E1F; font-size:.88rem;
+      background:#FFF8EC; border:1px solid #F4D9A6; border-left:4px solid #D9822B;
+      border-radius:12px; padding:.8rem 1rem; color:#6B4E1F !important;
+      font-size:.9375rem !important; line-height:1.5 !important;
   }
   .ok {
-      background:#EAF8F0; border:1px solid #BFE8CE; border-left:5px solid #1E9E5A;
-      border-radius:12px; padding:.75rem 1rem; color:#14532D; font-size:.88rem;
+      background:#EAF8F0; border:1px solid #BFE8CE; border-left:4px solid var(--acento-osc);
+      border-radius:12px; padding:.8rem 1rem; color:#14532D !important;
+      font-size:.9375rem !important; line-height:1.5 !important;
   }
-  .step { background:#fff; border:1px solid #E3ECE6; border-radius:14px; padding:1rem 1.1rem; height:100%; }
+  .step { background:#fff; border:1px solid var(--linea); border-radius:14px;
+          padding:1.05rem 1.1rem; height:100%; box-shadow:0 1px 2px rgba(11,37,69,.05); }
   .step .n {
       width:30px;height:30px;border-radius:9px;display:grid;place-items:center;
-      background:#E4F4EA;color:#1E9E5A;font-weight:800;margin-bottom:.55rem;
+      background:#E4F4EA;color:var(--acento-osc);font-weight:700;font-size:.9375rem;
+      margin-bottom:.6rem;
   }
-  .step b { color:var(--azul); }
-  .step p { color:#5A6B7B; font-size:.85rem; margin:.25rem 0 0; }
-  .footer { text-align:center; color:#8A99A8; font-size:.76rem; padding:2rem 0 .5rem; }
+  .step b { color:var(--texto) !important; font-size:1rem !important; }
+  .step p { color:var(--texto-2) !important; font-size:.875rem !important; margin:.3rem 0 0; }
+  .footer { text-align:center; color:var(--texto-3) !important;
+            font-size:.8125rem !important; padding:2rem 0 .75rem; }
+
+  /* ---------- responsive: las columnas se envuelven en vez de aplastarse ---------- */
+  [data-testid="stColumn"] { min-width:200px; }
+  [data-testid="stMainBlockContainer"] { max-width:1460px; margin-inline:auto; }
+  @media (max-width:700px) {
+      [data-testid="stMainBlockContainer"] { padding:52px 20px 96px !important; }
+      [data-testid="stColumn"] { min-width:100% !important; }
+      .page-head { align-items:flex-start; }
+      .page-head h1 { font-size:1.5rem !important; }
+  }
+
+  /* ---------- movimiento reducido ---------- */
+  @media (prefers-reduced-motion:reduce) {
+      *, *::before, *::after {
+          animation-duration:.01ms !important; animation-iteration-count:1 !important;
+          transition-duration:.01ms !important; scroll-behavior:auto !important;
+      }
+  }
 </style>
 """,
     unsafe_allow_html=True,
@@ -322,38 +475,49 @@ hydrate_once()
 # Utilidades de UI
 # --------------------------------------------------------------------------- #
 def page_head(icon: str, title: str, subtitle: str) -> None:
+    """icon: clave del set ICONS (nunca un emoji)."""
     st.markdown(
-        f'<div class="page-head"><div class="icon">{icon}</div>'
+        f'<div class="page-head"><div class="icon">{_svg(icon, 24)}</div>'
         f"<div><h1>{title}</h1><p>{subtitle}</p></div></div>",
         unsafe_allow_html=True,
     )
 
 
 def hero() -> None:
+    pills = "".join(
+        f'<span class="pill"><em>{_svg(k, 14)}</em>{label}</span>'
+        for k, label in (
+            ("privacidad", "Sin datos personales"),
+            ("validacion", "Validación temporal"),
+            ("modelos", "Modelos comparados"),
+        )
+    )
     st.markdown(
-        """
-<div class="hero">
-  <div class="kicker">Mercado Libre · Analítica con IA</div>
-  <h1>Rentabilidad y riesgo de devoluciones,<br>antes de que sea un problema</h1>
-  <p>Sube tu reporte de ventas y obtén indicadores económicos, predicciones con
-     validación temporal, factores asociados y recomendaciones accionables.
-     Todo el procesamiento ocurre de forma local y sin datos personales.</p>
-  <span class="pill">🔒 Sin PII</span>
-  <span class="pill">📈 Validación temporal</span>
-  <span class="pill">🤖 Modelos comparados</span>
-  <span class="pill">💾 Persistencia de datos y modelos</span>
-</div>
-""",
+        '<div class="hero">'
+        '<div class="kicker">Mercado Libre · Analítica con IA</div>'
+        "<h1>Rentabilidad y riesgo de devoluciones,<br>antes de que sea un problema</h1>"
+        "<p>Sube tu reporte de ventas y obtén indicadores económicos, predicciones con "
+        "validación temporal, factores asociados y recomendaciones accionables. "
+        "Todo el procesamiento ocurre de forma local y sin datos personales.</p>"
+        f"{pills}"
+        "</div>",
         unsafe_allow_html=True,
     )
 
 
 def money(x: float) -> str:
-    return f"${x:,.0f}"
+    """Cifra con signo tipográfico y agrupación de miles (evita el guion ASCII)."""
+    if x is None or pd.isna(x):
+        return "N/D"
+    sign = "\u2212" if x < 0 else ""
+    return f"{sign}${abs(x):,.0f}"
 
 
 def pct(x: float) -> str:
-    return "N/D" if pd.isna(x) else f"{x:.1%}"
+    if x is None or pd.isna(x):
+        return "N/D"
+    sign = "\u2212" if x < 0 else ""
+    return f"{sign}{abs(x):.1%}"
 
 
 def chart(fig: go.Figure, height: int | None = None) -> None:
@@ -361,19 +525,28 @@ def chart(fig: go.Figure, height: int | None = None) -> None:
         template="plotly_white",
         colorway=COLORES,
         margin=dict(l=10, r=10, t=52, b=64),
-        font=dict(family="system-ui, -apple-system, Segoe UI, sans-serif", color=AZUL),
+        font=dict(family="system-ui, -apple-system, Segoe UI, sans-serif",
+                  color=AZUL, size=13),
         title=dict(font=dict(size=15, color=AZUL), x=0.01),
         legend=dict(orientation="h", yanchor="top", y=-0.18, x=0),
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
     )
+    # Etiquetas de ejes y leyenda: mínimo 13 px (heredar de layout.font no basta).
+    fig.update_xaxes(tickfont=dict(size=13, color=AZUL), title_font=dict(size=13, color=AZUL))
+    fig.update_yaxes(tickfont=dict(size=13, color=AZUL), title_font=dict(size=13, color=AZUL))
+    fig.update_layout(legend_font=dict(size=13, color=AZUL))
     if height:
         fig.update_layout(height=height)
     st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
 
 def data_table(df: pd.DataFrame, height: int | None = None) -> None:
-    kwargs = {"height": height} if height else {}
+    kwargs = {}
+    if height:
+        # No pedir más alto de lo que la tabla ocupa: evita filas vacías al final.
+        height = max(96, min(height, 38 + max(len(df), 1) * 35))
+        kwargs["height"] = height
     st.dataframe(df, width="stretch", hide_index=True, **kwargs)
 
 
@@ -407,7 +580,7 @@ def filtered() -> pd.DataFrame:
                 d = d[(d.fecha_venta.dt.date >= a) & (d.fecha_venta.dt.date <= b)]
         if "sku" in d:
             skus = sorted(d.sku.dropna().astype(str).unique())
-            picked = st.multiselect("SKU", skus)
+            picked = st.multiselect("SKU", skus, placeholder="Todos los SKU")
             if picked:
                 d = d[d.sku.astype(str).isin(picked)]
         st.caption(f"{len(d):,} de {len(S['df']):,} ventas en el filtro")
@@ -433,9 +606,9 @@ def train_profitability() -> None:
         r = pm.train(S["df"], S.get("costs"), models_dir=str(MODELS_DIR))
     S["prof"] = r
     if r.get("viable"):
-        st.toast(f"Modelo de rentabilidad listo: {r['mejor']}", icon="✅")
+        st.toast(f"Modelo de rentabilidad listo: {r['mejor']}")
     else:
-        st.toast("El modelo de rentabilidad no es viable con estos datos", icon="⚠️")
+        st.toast("El modelo de rentabilidad no es viable con estos datos. Revisa el volumen de datos.")
 
 
 def train_returns() -> None:
@@ -443,9 +616,9 @@ def train_returns() -> None:
         r = rm.train(S["df"], models_dir=str(MODELS_DIR))
     S["ret"] = r
     if r.get("viable"):
-        st.toast(f"Modelo de devoluciones listo: {r['mejor']}", icon="✅")
+        st.toast(f"Modelo de devoluciones listo: {r['mejor']}")
     else:
-        st.toast("El modelo de devoluciones no es viable con estos datos", icon="⚠️")
+        st.toast("El modelo de devoluciones no es viable con estos datos. Revisa el volumen de datos.")
 
 
 def model_badge(kind: str) -> str:
@@ -461,11 +634,14 @@ def model_badge(kind: str) -> str:
 # --------------------------------------------------------------------------- #
 with st.sidebar:
     st.markdown(
-        '<div class="brand"><div class="logo">📦</div>'
-        "<div><b>ML Analytics</b><span>Mercado Libre · IA</span></div></div>",
+        '<div class="brand"><div class="logo">'
+        + _svg("marca", 26)
+        + '</div><div><b>ML Analytics</b><span>'
+        + _svg("datos", 15)
+        + "Mercado Libre · IA</span></div></div>",
         unsafe_allow_html=True,
     )
-    sec = st.radio("Menú", SECCIONES, key="menu", format_func=lambda s: f"{ICONOS[s]}  {s}")
+    sec = st.radio("Menú", SECCIONES, key="menu")
     st.divider()
 
     if "df" in S:
@@ -477,10 +653,11 @@ with st.sidebar:
             )
         n_skus = df0.sku.nunique() if "sku" in df0 else "N/D"
         st.markdown(
-            '<div class="side-card"><b>Conjunto activo</b><br>'
-            f"📄 {S.get('source', 'datos')}<br>"
-            f"🧾 {len(df0):,} filas · {n_skus} SKUs<br>"
-            f"🗓️ {rango or 'sin fechas válidas'}</div>",
+            '<div class="side-card"><b>Conjunto activo</b>'
+            f'<div class="kv"><span>Archivo</span><span>{S.get("source", "datos")}</span></div>'
+            f'<div class="kv"><span>Ventas</span><span>{len(df0):,}</span></div>'
+            f'<div class="kv"><span>SKUs</span><span>{n_skus}</span></div>'
+            f'<div class="kv"><span>Periodo</span><span>{rango or "sin fechas"}</span></div></div>',
             unsafe_allow_html=True,
         )
     else:
@@ -491,8 +668,9 @@ with st.sidebar:
         )
 
     st.markdown(
-        '<div class="side-card"><b>Modelos</b><br>'
-        f"{model_badge('prof')}<br>{model_badge('ret')}</div>",
+        '<div class="side-card"><b>Modelos</b>'
+        f'<div class="kv"><span>Rentabilidad</span><span>{model_badge("prof")}</span></div>'
+        f'<div class="kv"><span>Devoluciones</span><span>{model_badge("ret")}</span></div></div>',
         unsafe_allow_html=True,
     )
     st.caption("El archivo original nunca se modifica. Datos personales excluidos.")
@@ -524,10 +702,10 @@ if sec == "Inicio":
         )
         st.write("")
         a, b, _ = st.columns([1.1, 1.4, 2])
-        if a.button("📤 Ir a Carga de datos", type="primary", width="stretch"):
+        if a.button("Ir a Carga de datos", type="primary", width="stretch"):
             S["menu"] = "Carga de datos"
             st.rerun()
-        if b.button("🚀 Explorar con datos de demostración", width="stretch"):
+        if b.button("Explorar con datos de demostración", width="stretch"):
             with st.spinner("Cargando datos simulados…"):
                 if load_demo():
                     st.rerun()
@@ -574,7 +752,7 @@ if sec == "Inicio":
             unsafe_allow_html=True,
         )
 
-    t1, t2, t3 = st.tabs(["📈 Evolución mensual", "🏆 Top SKUs", "🧾 Actividad reciente"])
+    t1, t2, t3 = st.tabs(["Evolución mensual", "Top SKUs", "Actividad reciente"])
 
     with t1:
         if "fecha_venta" in d and d.fecha_venta.notna().any():
@@ -651,7 +829,9 @@ if sec == "Inicio":
 # Carga de datos
 # --------------------------------------------------------------------------- #
 elif sec == "Carga de datos":
-    page_head("📤", "Carga de datos", "Sube tu reporte de Mercado Libre y, si lo tienes, tu catálogo de costos.")
+    if S.pop("_flash", None):
+        st.success("Datos y modelos borrados. Vuelve a cargar un reporte para empezar.")
+    page_head("carga", "Carga de datos", "Sube tu reporte de Mercado Libre y, si lo tienes, tu catálogo de costos.")
 
     izq, der = st.columns([1.25, 1])
 
@@ -675,13 +855,14 @@ elif sec == "Carga de datos":
                     S.pop("ret", None)
                     S["_upload_sig"] = firma
                     save_dataset(df, S.get("costs"), f.name)
-                    st.toast(f"{len(df):,} filas cargadas y guardadas", icon="✅")
+                    st.toast(f"{len(df):,} filas cargadas y guardadas")
                     st.rerun()
                 except Exception as exc:
-                    st.error(f"No se pudo leer el archivo: {exc}")
+                    st.error(f"No se pudo leer el archivo {f.name}. Revisa que sea un export "
+                         f"de Mercado Libre en Excel o CSV. Detalle: {exc}")
                     S.pop("_upload_sig", None)
 
-        if st.button("🚀 Usar datos de demostración", width="stretch"):
+        if st.button("Usar datos de demostración", width="stretch"):
             with st.spinner("Cargando datos simulados…"):
                 if load_demo():
                     st.rerun()
@@ -706,10 +887,11 @@ elif sec == "Carga de datos":
                     S["_costs_sig"] = firma
                     if "df" in S:
                         save_dataset(S["df"], costs, S.get("source", "datos"))
-                    st.toast(f"{len(costs):,} costos cargados", icon="✅")
+                    st.toast(f"{len(costs):,} costos cargados")
                     st.rerun()
                 except Exception as exc:
-                    st.error(f"No se pudo leer el catálogo: {exc}")
+                    st.error(f"No se pudo leer el catálogo {cf.name}. Debe ser CSV o Excel con las "
+                         f"columnas sku y costo_unitario. Detalle: {exc}")
         if S.get("costs") is not None:
             st.success(f"Catálogo activo: {len(S['costs']):,} SKUs con costo unitario.")
             st.caption("El resultado económico se recalcula automáticamente con estos costos.")
@@ -732,9 +914,7 @@ elif sec == "Carga de datos":
         unsafe_allow_html=True,
     )
 
-    t1, t2, t3, t4 = st.tabs(
-        ["🧹 Limpieza", "📋 Calidad", "🔄 Devoluciones", "👀 Vista previa"]
-    )
+    t1, t2, t3, t4 = st.tabs(["Limpieza", "Calidad", "Devoluciones", "Vista previa"])
     with t1:
         st.markdown("**Decisiones aplicadas**")
         for x in S.get("log", []):
@@ -772,18 +952,33 @@ elif sec == "Carga de datos":
     with t4:
         data_table(df.head(100), 420)
         st.download_button(
-            "⬇️ Descargar datos procesados (CSV)",
+            "Descargar datos procesados (CSV)",
             df.to_csv(index=False).encode("utf-8-sig"),
             "datos_procesados.csv",
             mime="text/csv",
         )
 
-    with st.expander("🗑️ Eliminar datos guardados"):
-        st.write("Borra el conjunto persistido en disco y reinicia la sesión de datos.")
-        if st.button("Eliminar datos y empezar de nuevo", type="secondary"):
+    with st.expander("Eliminar datos guardados"):
+        st.markdown(
+            '<div class="nota">Acción destructiva: borra el conjunto persistido en disco '
+            "y los resultados de la sesión. No se puede deshacer.</div>",
+            unsafe_allow_html=True,
+        )
+        confirmar = st.checkbox(
+            "Entiendo que se borrarán los datos y los modelos de esta sesión.",
+            key="confirmar_borrar",
+        )
+        if st.button(
+            "Borrar datos y modelos",
+            type="primary",
+            disabled=not confirmar,
+            width="stretch",
+        ):
             clear_saved()
             for k in ("df", "costs", "log", "meta", "source", "prof", "ret", "_upload_sig", "_costs_sig", "demo"):
                 S.pop(k, None)
+            S["_flash"] = "Datos y modelos borrados. Vuelve a cargar un reporte para empezar."
+            S.pop("confirmar_borrar", None)
             st.rerun()
 
 
@@ -791,13 +986,13 @@ elif sec == "Carga de datos":
 # Análisis exploratorio
 # --------------------------------------------------------------------------- #
 elif sec == "Análisis exploratorio":
-    page_head("📊", "Análisis exploratorio", "Panorama de productos, envíos y evolución del negocio.")
+    page_head("exploratorio", "Análisis exploratorio", "Panorama de productos, envíos y evolución del negocio.")
     d = filtered()
     if not len(d):
         st.warning("El filtro actual no devuelve ventas.")
         st.stop()
 
-    t1, t2, t3 = st.tabs(["🛍️ Productos", "🚚 Envíos", "💵 Importes"])
+    t1, t2, t3 = st.tabs(["Productos", "Envíos", "Importes"])
 
     with t1:
         if "sku" in d:
@@ -908,7 +1103,7 @@ elif sec == "Análisis exploratorio":
 # Rentabilidad
 # --------------------------------------------------------------------------- #
 elif sec == "Rentabilidad":
-    page_head("💰", "Rentabilidad", "Resultado económico por venta y modelos de regresión comparados.")
+    page_head("rentabilidad", "Rentabilidad", "Resultado económico por venta y modelos de regresión comparados.")
     d = filtered()
 
     izq, der = st.columns([1.2, 2])
@@ -918,7 +1113,11 @@ elif sec == "Rentabilidad":
             "Se comparan baseline, regresión lineal, Random Forest y XGBoost. "
             "El 80 % más antiguo entrena y el 20 % más reciente prueba (validación temporal)."
         )
-        if st.button("🤖 Entrenar / reentrenar", type="primary", width="stretch"):
+        if st.button(
+            "Reentrenar modelos" if S.get("prof") else "Entrenar modelos",
+            type="primary",
+            width="stretch",
+        ):
             train_profitability()
             st.rerun()
         if S.get("prof", {}).get("from_disk"):
@@ -943,7 +1142,7 @@ elif sec == "Rentabilidad":
         else:
             st.markdown(
                 '<div class="nota">Aún no hay modelo de rentabilidad. Pulsa '
-                "<b>Entrenar / reentrenar</b> para comparar algoritmos.</div>",
+                "<b>Entrenar modelos</b> para comparar algoritmos.</div>",
                 unsafe_allow_html=True,
             )
 
@@ -1007,7 +1206,7 @@ elif sec == "Rentabilidad":
 # Predicción de devoluciones
 # --------------------------------------------------------------------------- #
 elif sec == "Predicción de devoluciones":
-    page_head("🔄", "Predicción de devoluciones", "Clasificación del riesgo relativo con evidencia verificable.")
+    page_head("devoluciones", "Predicción de devoluciones", "Clasificación del riesgo relativo con evidencia verificable.")
     d = require_data()
     dg = rm.diagnose(d)
     ver = dg["devoluciones(1)"] + dg["no_devoluciones(0)"]
@@ -1024,7 +1223,11 @@ elif sec == "Predicción de devoluciones":
             "Se comparan baseline, regresión logística, árbol de decisión, Random Forest y XGBoost. "
             "El riesgo es relativo: las probabilidades no están calibradas."
         )
-        if st.button("🤖 Entrenar / reentrenar", type="primary", width="stretch"):
+        if st.button(
+            "Reentrenar modelos" if S.get("ret") else "Entrenar modelos",
+            type="primary",
+            width="stretch",
+        ):
             train_returns()
             st.rerun()
         if S.get("ret", {}).get("from_disk"):
@@ -1044,7 +1247,7 @@ elif sec == "Predicción de devoluciones":
         else:
             st.markdown(
                 '<div class="nota">Aún no hay modelo de devoluciones. Pulsa '
-                "<b>Entrenar / reentrenar</b>.</div>",
+                "<b>Entrenar modelos</b>.</div>",
                 unsafe_allow_html=True,
             )
 
@@ -1086,7 +1289,7 @@ elif sec == "Predicción de devoluciones":
             data_table(tabla, 420)
             st.caption("Bajo / Medio / Alto se definen por percentiles de la probabilidad estimada.")
             st.download_button(
-                "⬇️ Descargar riesgo por venta (CSV)",
+                "Descargar riesgo por venta (CSV)",
                 out[cols].to_csv(index=False).encode("utf-8-sig"),
                 "riesgo_devoluciones.csv",
                 mime="text/csv",
@@ -1097,8 +1300,8 @@ elif sec == "Predicción de devoluciones":
 # Comparación de modelos
 # --------------------------------------------------------------------------- #
 elif sec == "Comparación de modelos":
-    page_head("⚖️", "Comparación de modelos", "Métricas lado a lado para elegir con criterio.")
-    t1, t2 = st.tabs(["💰 Rentabilidad", "🔄 Devoluciones"])
+    page_head("comparacion", "Comparación de modelos", "Métricas lado a lado para elegir con criterio.")
+    t1, t2 = st.tabs(["Rentabilidad", "Devoluciones"])
 
     with t1:
         r = S.get("prof")
@@ -1144,7 +1347,7 @@ elif sec == "Comparación de modelos":
 # Recomendaciones
 # --------------------------------------------------------------------------- #
 elif sec == "Recomendaciones inteligentes":
-    page_head("💡", "Recomendaciones inteligentes", "Hallazgos accionables basados en los datos observados.")
+    page_head("recomendaciones", "Recomendaciones inteligentes", "Hallazgos accionables basados en los datos observados.")
     d = filtered()
     if not len(d):
         st.warning("El filtro actual no devuelve ventas.")
@@ -1167,7 +1370,7 @@ elif sec == "Recomendaciones inteligentes":
             with st.expander(f"{tipo} · {len(grupo)} hallazgo(s)", expanded=True):
                 data_table(grupo[["elemento", "evidencia"]], 260)
         st.download_button(
-            "⬇️ Descargar recomendaciones (CSV)",
+            "Descargar recomendaciones (CSV)",
             out.to_csv(index=False).encode("utf-8-sig"),
             "recomendaciones.csv",
             mime="text/csv",
@@ -1179,14 +1382,14 @@ elif sec == "Recomendaciones inteligentes":
 # Reportes
 # --------------------------------------------------------------------------- #
 elif sec == "Reportes":
-    page_head("📄", "Reportes", "Exporta los resultados de la sesión actual.")
+    page_head("reportes", "Reportes", "Exporta los resultados de la sesión actual.")
     d = filtered()
 
     st.markdown("#### Descargas")
     a, b, c = st.columns(3)
     with a:
         st.download_button(
-            "⬇️ Datos con resultado económico",
+            "Descargar datos con resultado económico",
             d.to_csv(index=False).encode("utf-8-sig"),
             "reporte_economico.csv",
             mime="text/csv",
@@ -1196,7 +1399,7 @@ elif sec == "Reportes":
         prof = S.get("prof")
         if prof and prof.get("viable") and prof.get("metrics") is not None:
             st.download_button(
-                "⬇️ Métricas de rentabilidad",
+                "Descargar métricas de rentabilidad",
                 prof["metrics"].to_csv(index=False).encode("utf-8-sig"),
                 "metricas_rentabilidad.csv",
                 mime="text/csv",
@@ -1208,7 +1411,7 @@ elif sec == "Reportes":
         ret = S.get("ret")
         if ret and ret.get("viable") and ret.get("metrics") is not None:
             st.download_button(
-                "⬇️ Métricas de devoluciones",
+                "Descargar métricas de devoluciones",
                 ret["metrics"].to_csv(index=False).encode("utf-8-sig"),
                 "metricas_devoluciones.csv",
                 mime="text/csv",
@@ -1245,7 +1448,7 @@ elif sec == "Reportes":
     )
     data_table(resumen, 380)
     st.download_button(
-        "⬇️ Descargar resumen (CSV)",
+        "Descargar resumen (CSV)",
         resumen.to_csv(index=False).encode("utf-8-sig"),
         "resumen_sesion.csv",
         mime="text/csv",
