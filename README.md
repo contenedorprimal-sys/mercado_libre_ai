@@ -76,6 +76,12 @@ streamlit run app.py
   `python scripts/train.py data/demo_simulado.csv`
   (las métricas de esos datos **NO** son resultados reales).
 
+  ### Qué hace `scripts/train.py` al ejecutarse
+
+1. Carga el reporte con `data_processing.load_file()` y lo limpia con `data_processing.clean()`, imprimiendo columnas finales y el registro (`log`) de limpieza.
+2. Muestra el resumen de calidad (`quality_report`, sin `faltantes_pct` en consola) y el diagnóstico de devoluciones (`returns_model.diagnose()`).
+3. Ejecuta `profitability_model.train(df, costs)` y `returns_model.train(df)`, imprimiendo `tipo_resultado`, conteos de `train`/`test`, métricas, top 8 de importancia o el motivo (`razon`) cuando un modelo no es viable.
+
 ### Formato esperado de archivos de entrada
 
 - **Reporte de ventas (`.xlsx` / `.csv`):** exportación estándar de ventas de Mercado Libre. Debe contener al menos identificador de venta, fecha, SKU/publicación, unidades, precio unitario, tipo de publicación, método de envío, estado de entrega/reclamo y la columna `Total (MXN)`.
