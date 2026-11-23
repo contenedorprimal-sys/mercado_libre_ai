@@ -76,6 +76,11 @@ streamlit run app.py
   `python scripts/train.py data/demo_simulado.csv`
   (las métricas de esos datos **NO** son resultados reales).
 
+  ### Formato esperado de archivos de entrada
+
+- **Reporte de ventas (`.xlsx` / `.csv`):** exportación estándar de ventas de Mercado Libre. Debe contener al menos identificador de venta, fecha, SKU/publicación, unidades, precio unitario, tipo de publicación, método de envío, estado de entrega/reclamo y la columna `Total (MXN)`.
+- **Catálogo de costos (`costos.csv`, opcional):** archivo UTF-8 separado por comas con encabezado exacto `sku,costo_unitario` (valores numéricos en MXN sin símbolo `$`).
+
 ## Secciones de la interfaz
 
 1. **Inicio** — indicadores clave, evolución mensual, top SKUs y actividad reciente.
@@ -103,6 +108,15 @@ streamlit run app.py
 - **Privacidad:** columnas personales (comprador, domicilio, documentos, seguimiento, etc.)
   se eliminan al cargar.
 - **Importancia de variables:** permutación (asociación, no causalidad).
+
+## Documentación técnica
+
+Para detalles de implementación, contratos de módulos y especificaciones de modelos, consulta:
+
+- [Arquitectura y flujo del sistema](docs/01-arquitectura.md) — diagrama de componentes y responsabilidades de `src/`.
+- [Diccionario de datos y privacidad](docs/02-datos-y-privacidad.md) — esquema esperado, limpieza, anonimización y persistencia.
+- [Especificación de modelos ML](docs/03-modelos-ml.md) — ingeniería de variables, algoritmos, validación temporal y bandas de riesgo.
+- [Motor de recomendaciones y operación](docs/04-recomendaciones-y-operacion.md) — lógica de hallazgos por SKU/transportista y troubleshooting.
 
 ## Estructura
 
