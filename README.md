@@ -76,7 +76,7 @@ streamlit run app.py
   `python scripts/train.py data/demo_simulado.csv`
   (las métricas de esos datos **NO** son resultados reales).
 
-  ### Formato esperado de archivos de entrada
+### Formato esperado de archivos de entrada
 
 - **Reporte de ventas (`.xlsx` / `.csv`):** exportación estándar de ventas de Mercado Libre. Debe contener al menos identificador de venta, fecha, SKU/publicación, unidades, precio unitario, tipo de publicación, método de envío, estado de entrega/reclamo y la columna `Total (MXN)`.
 - **Catálogo de costos (`costos.csv`, opcional):** archivo UTF-8 separado por comas con encabezado exacto `sku,costo_unitario` (valores numéricos en MXN sin símbolo `$`).
