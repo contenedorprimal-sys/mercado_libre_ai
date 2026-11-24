@@ -9,7 +9,6 @@ recomendaciones por SKU/transportista. El procesamiento es local y elimina datos
 ```bash
 docker compose up --build -d      # construye la imagen y arranca en segundo plano
 docker compose ps                 # debe mostrar "healthy"
-```
 
 Abre: **http://localhost:8501**
 
@@ -65,6 +64,7 @@ no se reutiliza: el `docker-compose.yml` construye y etiqueta `mercado-libre-ai:
 ## Uso local sin Docker
 
 ```bash
+
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 streamlit run app.py
