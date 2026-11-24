@@ -9,17 +9,10 @@ recomendaciones por SKU/transportista. El procesamiento es local y elimina datos
 ```bash
 docker compose up --build -d      # construye la imagen y arranca en segundo plano
 docker compose ps                 # debe mostrar "healthy"
-
-Abre: **http://localhost:8501**
-
-La primera vez se carga automáticamente `data/demo_simulado.csv` para que la interfaz
-tenga datos. También puedes subir tu propio reporte en *Carga de datos*.
-
-```bash
+```
 docker compose logs -f app        # logs en vivo
 docker compose down               # detener (los datos y modelos se conservan)
 docker compose up -d              # volver a arrancar
-```
 
 ### Persistencia
 
