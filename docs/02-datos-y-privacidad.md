@@ -2,16 +2,21 @@
 
 ## Formato de reportes de Mercado Libre
 
-- Los reportes cuentan con **dos filas de encabezado**: la primera fila agrupa por sección (`Ventas`, `Publicidad`, `Publicaciones`, `Facturación al comprador`, `Compradores`, `Envíos`, `Devoluciones`, `Reclamos`) y la segunda fila contiene los nombres de columna (por ejemplo: `# de venta`, `Fecha de venta`, `Estado`, `Descripción del estado`, `Unidades`, `Ingresos por productos (MXN)`, `Cargo por venta e impuestos (MXN)`, `Costos de envío (MXN)`, `Anulaciones y reembolsos (MXN)`, `Total (MXN)`, `SKU`, `# de publicación`, `Precio unitario de venta de la publicación (MXN)`, `Tipo de publicación`, `Forma de entrega`, `Fecha en camino`, `Fecha entregado`, `Transportista`).
+Los reportes de entrada utilizan **dos filas de encabezado**:
+
+- **Fila 0 (secciones):** `Ventas` (16 columnas), `Publicidad` (1), `Publicaciones` (7), `Facturación al comprador` (6), `Compradores` (8), `Envíos` (6), `Devoluciones` (19) y `Reclamos` (3).
+- **Fila 1 (columnas):** incluye campos como `# de venta`, `Fecha de venta`, `Estado`, `Descripción del estado`, `Paquete de varios productos`, `Pertenece a un kit`, `Unidades`, `Ingresos por productos (MXN)`, `Cargo por venta e impuestos (MXN)`, `Ingresos por envío (MXN)`, `Costos de envío (MXN)`, `Costo de envío basado en medidas y peso declarados`, `Cargo por diferencias en medidas y peso del paquete`, `Descuentos y bonificaciones`, `Anulaciones y reembolsos (MXN)`, `Total (MXN)`, `Orden de compra`, `Venta por publicidad`, `SKU`, `# de publicación`, `Título de la publicación`, `Variante`, `Precio unitario de venta de la publicación (MXN)`, `Tipo de publicación`, `Forma de entrega`, `Fecha en camino`, `Fecha entregado`, `Transportista`, entre otros.
 
 ## Simulación de datos (`scripts/make_demo_data.py`)
 
-- **Semilla y tamaño:** `np.random.default_rng(7)` y `N` configurable por argumento (`1500` por defecto).
-- **Entidades simuladas:** 10 SKUs (`SKU-001` a `SKU-010`) con precio base uniforme en `[150, 1500)` y probabilidad base de devolución en `[0.02, 0.18)`; 3 transportistas (`Estafeta` `0.5`, `DHL` `0.3`, `Mercado Envíos Flex` `0.2`), multiplicando por `1.8` la probabilidad de devolución cuando el transportista es `DHL`.
-- **Fechas y montos:** fechas desde `2025-01-01` en un rango de `420` días; unidades en `[1, 1, 1, 2, 3]`; comisión `-round(ing * .17, 2)`; envío `-round(rng.uniform(60, 140), 2)`; cancelación del `3 %` cuando no hay devolución; `Total` como `round(ing + cargo + env + refund, 2)`.
+Genera `data/demo_simulado.csv` (`header=False, index=False`) únicamente para pruebas; sus métricas **no** representan resultados reales:
+
+- **Semilla y tamaño:** `np.random.default_rng(7)` y `N` configurable por argumento CLI (`1500` por defecto).
+- **Catálogo simulado:** 10 SKUs (`SKU-001` a `SKU-010`) con precio base `rng.uniform(150, 1500)` y probabilidad base de devolución `rng.uniform(0.02, 0.18)`.
+- **Transportistas:** `Estafeta`, `DHL` y `Mercado Envíos Flex` con probabilidades `[0.5, 0.3, 0.2]`; cuando el transportista es `DHL`, la probabilidad de devolución se multiplica por `1.8`.
+- **Fechas y cálculo económico:** fechas desde `2025-01-01` más `0..419` días y `0..23` horas; unidades en `[1, 1, 1, 2, 3]`; `ing = round(price * u, 2)`; `cargo = -round(ing * .17, 2)`; `env = -round(rng.uniform(60, 140), 2)`; probabilidad de cancelación del `3 %` si no hay devolución; `refund = -ing` si hay devolución (`0.0` en otro caso); `total = round(ing + cargo + env + refund, 2)`.
 
 ## Privacidad y persistencia
 
-- Se eliminan datos personales/sensibles al cargar (como `Comprador`, `Domicilio`, `Municipio/Alcaldía`, `Estado`, `Código postal`, `País`, `Número de seguimiento`, `URL de seguimiento`, entre otros presentes en el reporte).
-- La sesión activa se guarda en `data/current/` y los modelos entrenados en `models/` (`profitability.joblib`, `returns.joblib`).
-- `[Completar con la lista exacta de columnas eliminadas y campos de quality_report / metadata desde src/data_processing.py]`.
+- El procesamiento es local y elimina columnas de datos personales o sensibles al cargar (como `Comprador`, `Domicilio`, `Municipio/Alcaldía`, `Estado`, `Código postal`, `País`, `Número de seguimiento`, `URL de seguimiento`, entre otras).
+- La sesión activa se conserva en `data/current/` y los modelos entrenados en `models/` (`profitability.joblib`, `returns.joblib`).
