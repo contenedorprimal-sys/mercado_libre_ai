@@ -1,11 +1,17 @@
-# Diccionario de Datos, Calidad y Privacidad
+# Diccionario de Datos, Simulación y Privacidad
 
-## Anonimización (PII)
-Al ingestar el reporte en `data_processing.py`, se descartan antes de persistir en disco las columnas sensibles: nombre del comprador, usuario/nickname, domicilio, código postal detallado, teléfono, identificación fiscal/documentos y número de guía/seguimiento.
+## Formato de reportes de Mercado Libre
 
-## Esquema procesado (`data/current/`)
-- `dataset.parquet` / `.csv`: registros limpios listos para modelado.
-- `metadata.json`: fecha de carga, número de filas válidas, filas excluidas por ambigüedad en devoluciones y bandera `has_costs` (`true` = rentabilidad completa, `false` = etiqueta **PARCIAL**).
+- Los reportes cuentan con **dos filas de encabezado**: la primera fila agrupa por sección (`Ventas`, `Publicidad`, `Publicaciones`, `Facturación al comprador`, `Compradores`, `Envíos`, `Devoluciones`, `Reclamos`) y la segunda fila contiene los nombres de columna (por ejemplo: `# de venta`, `Fecha de venta`, `Estado`, `Descripción del estado`, `Unidades`, `Ingresos por productos (MXN)`, `Cargo por venta e impuestos (MXN)`, `Costos de envío (MXN)`, `Anulaciones y reembolsos (MXN)`, `Total (MXN)`, `SKU`, `# de publicación`, `Precio unitario de venta de la publicación (MXN)`, `Tipo de publicación`, `Forma de entrega`, `Fecha en camino`, `Fecha entregado`, `Transportista`).
 
-## Reglas de calidad y exclusión
-- **Devoluciones ambiguas:** ventas entregadas hace menos de 30 días sin reclamo ni devolución confirmada se excluyen del entrenamiento de `returns_model.py` para evitar falsos negativos.
+## Simulación de datos (`scripts/make_demo_data.py`)
+
+- **Semilla y tamaño:** `np.random.default_rng(7)` y `N` configurable por argumento (`1500` por defecto).
+- **Entidades simuladas:** 10 SKUs (`SKU-001` a `SKU-010`) con precio base uniforme en `[150, 1500)` y probabilidad base de devolución en `[0.02, 0.18)`; 3 transportistas (`Estafeta` `0.5`, `DHL` `0.3`, `Mercado Envíos Flex` `0.2`), multiplicando por `1.8` la probabilidad de devolución cuando el transportista es `DHL`.
+- **Fechas y montos:** fechas desde `2025-01-01` en un rango de `420` días; unidades en `[1, 1, 1, 2, 3]`; comisión `-round(ing * .17, 2)`; envío `-round(rng.uniform(60, 140), 2)`; cancelación del `3 %` cuando no hay devolución; `Total` como `round(ing + cargo + env + refund, 2)`.
+
+## Privacidad y persistencia
+
+- Se eliminan datos personales/sensibles al cargar (como `Comprador`, `Domicilio`, `Municipio/Alcaldía`, `Estado`, `Código postal`, `País`, `Número de seguimiento`, `URL de seguimiento`, entre otros presentes en el reporte).
+- La sesión activa se guarda en `data/current/` y los modelos entrenados en `models/` (`profitability.joblib`, `returns.joblib`).
+- `[Completar con la lista exacta de columnas eliminadas y campos de quality_report / metadata desde src/data_processing.py]`.
