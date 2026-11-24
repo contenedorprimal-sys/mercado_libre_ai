@@ -111,7 +111,7 @@ streamlit run app.py
 ## Documentación técnica
 
 Para detalles de implementación, contratos de módulos y especificaciones de modelos, consulta:
-
+- [Documento de negocio, alcance y limitaciones](docs/00-documento-negocio.md) — propósito, reglas operativas, lo que el sistema hace y lo que deja de hacer.
 - [Arquitectura y flujo del sistema](docs/01-arquitectura.md) — diagrama de componentes y responsabilidades de `src/`.
 - [Diccionario de datos y privacidad](docs/02-datos-y-privacidad.md) — esquema esperado, limpieza, anonimización y persistencia.
 - [Especificación de modelos ML](docs/03-modelos-ml.md) — ingeniería de variables, algoritmos, validación temporal y bandas de riesgo.
