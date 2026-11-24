@@ -27,13 +27,12 @@ from src import recommendations as rec
 from src import returns_model as rm
 
 # --------------------------------------------------------------------------- #
-# Configuración general
+# Configuración general y constantes
 # --------------------------------------------------------------------------- #
 st.set_page_config(
     page_title="ML Analytics IA · Mercado Libre",
     page_icon="📦",
     layout="wide",
-    # "auto": expandida en escritorio, colapsada en pantallas estrechas.
     initial_sidebar_state="auto",
 )
 
@@ -48,7 +47,6 @@ AZUL = "#0B2545"
 AZUL_2 = "#13315C"
 AMBAR = "#F4A261"
 ROJO = "#D1495B"
-GRIS = "#6B7A8F"
 COLORES = [VERDE, AZUL_2, AMBAR, ROJO, "#457B9D", "#8AB17D", "#E9C46A", "#9B5DE5"]
 
 SECCIONES = [
@@ -61,13 +59,12 @@ SECCIONES = [
     "Recomendaciones inteligentes",
     "Reportes",
 ]
-# Set de iconos vectoriales: un solo lenguaje visual (trazo 1.75, remates redondos).
+
 ICONS = {
     "marca": '<path d="M4 18.5V11"/><path d="M9.3 18.5V6.5"/><path d="M14.7 18.5v-6"/>'
              '<path d="M20 18.5V4.5"/><path d="M2.5 21h19"/>',
     "datos": '<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.66 3.13 3 7 3s7-1.34 7-3V6"/>'
              '<path d="M5 12v6c0 1.66 3.13 3 7 3s7-1.34 7-3v-6"/>',
-    "inicio": '<path d="M4 10.5 12 4l8 6.5"/><path d="M6.5 9.5V19a1 1 0 0 0 1 1H10v-4.5h4V20h2.5a1 1 0 0 0 1-1V9.5"/>',
     "carga": '<path d="M12 15.5V4"/><path d="m7.5 8.5 4.5-4.5 4.5 4.5"/>'
              '<path d="M4.5 14.5v3.5a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-3.5"/>',
     "exploratorio": '<path d="M4.5 19.5V11"/><path d="M9.8 19.5V6.5"/><path d="M15.2 19.5v-5.5"/>'
@@ -86,16 +83,12 @@ ICONS = {
     "validacion": '<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5.2l3.3 2"/>',
     "modelos": '<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/>'
                '<rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>',
-    "reloj": '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 1.8"/>',
-    "hoja": '<path d="M6.5 3.5h7l4.5 4.5v12a1 1 0 0 1-1 1h-10.5a1 1 0 0 1-1-1v-15a1 1 0 0 1 1-1Z"/>'
-            '<path d="M13.5 3.5V8h4.5"/>',
-    "alerta": '<path d="M12 4.5 2.8 20h18.4Z"/><path d="M12 10v4.2"/><path d="M12 17.3h0"/>',
-    "ok": '<circle cx="12" cy="12" r="8.5"/><path d="m8.2 12.2 2.6 2.6 5-5.4"/>',
 }
+
+S = st.session_state
 
 
 def _svg(key: str, size: int = 24) -> str:
-    """Icono SVG del set. Clave desconocida -> cadena vacía (nunca emoji suelto)."""
     body = ICONS.get(key, "")
     if not body:
         return ""
@@ -104,7 +97,7 @@ def _svg(key: str, size: int = 24) -> str:
         'stroke="currentColor" stroke-width="1.75" stroke-linecap="round" '
         f'stroke-linejoin="round" aria-hidden="true">{body}</svg>'
     )
-S = st.session_state
+
 
 # --------------------------------------------------------------------------- #
 # Estilos
@@ -112,13 +105,12 @@ S = st.session_state
 st.markdown(
     """
 <style>
-  /* ---------- tokens (modo claro; contrastes calculados sobre WCAG AA) ---------- */
   :root {
-    --texto:#0B2545;       /* titulos y cifras        15,39:1 sobre #FFFFFF */
-    --texto-2:#45556B;     /* cuerpo secundario        7,60:1 sobre #FFFFFF */
-    --texto-3:#55677C;     /* metadatos (>=13 px)      5,21:1 sobre #EEF4F0 */
-    --acento:#1E9E5A;      /* rellenos e indicadores   3,45:1 vs #FFFFFF */
-    --acento-osc:#157A47;  /* relleno con texto blanco 5,38:1 */
+    --texto:#0B2545;
+    --texto-2:#45556B;
+    --texto-3:#55677C;
+    --acento:#1E9E5A;
+    --acento-osc:#157A47;
     --linea:#E3ECE6;
     --linea-2:#D7E4DC;
     --radio:14px;
@@ -126,7 +118,6 @@ st.markdown(
              Roboto,"Helvetica Neue",Arial,sans-serif;
   }
 
-  /* ---------- una sola tipografía; los iconos Material conservan la suya ---------- */
   html body, html body *:not([data-testid="stIconMaterial"]) { font-family:var(--fuente) !important; }
   [data-testid="stIconMaterial"] { font-family:"Material Symbols Rounded" !important; }
 
@@ -135,7 +126,6 @@ st.markdown(
   [data-testid="stToolbar"], [data-testid="stDecoration"],
   [data-testid="stStatusWidget"], [data-testid="stAppDeployButton"] { display:none !important; }
 
-  /* ---------- jerarquía tipográfica ---------- */
   .stApp p { font-size:15px; line-height:1.5; }
   .stApp h1 { font-size:1.875rem !important; font-weight:700 !important;
               letter-spacing:-.02em !important; line-height:1.2 !important;
@@ -144,7 +134,6 @@ st.markdown(
               letter-spacing:-.01em !important; color:var(--texto) !important; }
   .stApp h3 { font-size:1.125rem !important; font-weight:700 !important; color:var(--texto) !important; }
   .stApp h4 { font-size:.9375rem !important; font-weight:700 !important; color:var(--texto) !important; }
-  /* excepciones: mínimos de lectura (13 px) y cifras destacadas */
   [data-testid="stCaptionContainer"] p { font-size:13.5px !important; }
   [data-testid="stWidgetLabel"] p { font-size:13.5px !important; font-weight:600 !important; }
   [data-testid="stMetricLabel"] p { font-size:13px !important; font-weight:600 !important;
@@ -154,12 +143,11 @@ st.markdown(
   [data-testid="stTab"] p { font-size:15px !important; font-weight:600 !important; }
   [data-testid="stRadioOption"] p { font-size:15px !important; }
 
-  /* ---------- barra lateral ---------- */
   [data-testid="stSidebar"] {
       background: linear-gradient(180deg,#0B2545 0%,#13315C 65%,#0E3B2E 100%);
       border-right: 1px solid rgba(255,255,255,.08);
+      color:#EAF2EE;
   }
-  [data-testid="stSidebar"] { color:#EAF2EE; }
   [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2,
   [data-testid="stSidebar"] h3, [data-testid="stSidebar"] h4,
   [data-testid="stSidebar"] h5, [data-testid="stSidebar"] h6,
@@ -174,7 +162,6 @@ st.markdown(
   [data-testid="stSidebar"] hr { border-color:rgba(255,255,255,.16); }
   [data-testid="stSidebar"] [data-testid="stHeaderActionElements"] a { color:rgba(234,242,238,.75); }
 
-  /* navegación: la selección se comunica con relleno y peso, no solo con color */
   [data-testid="stSidebar"] [data-testid="stRadioOption"] {
       border-radius:10px; padding:9px 10px !important;
       transition:background-color .15s ease;
@@ -190,10 +177,8 @@ st.markdown(
   [data-testid="stSidebar"] [data-testid="stRadioOption"]:focus-visible {
       outline:2px solid #8FE3B5; outline-offset:1px;
   }
-  /* el punto del radio se oculta: el estado ya va en el relleno y en el peso */
   [data-testid="stSidebar"] [data-testid="stRadioOption"] > div > div:first-child { display:none; }
 
-  /* ---------- marca y fichas de la barra lateral ---------- */
   .brand { display:flex; gap:.7rem; align-items:center; margin:.2rem 0 1.1rem; }
   .brand .logo {
       width:44px;height:44px;border-radius:12px;display:grid;place-items:center;
@@ -225,7 +210,6 @@ st.markdown(
   .dot.on { background:#35C77E; box-shadow:0 0 0 3px rgba(53,199,126,.2); }
   .dot.off { background:#F4A261; }
 
-  /* ---------- encabezado hero ---------- */
   .hero {
       position:relative; overflow:hidden; border-radius:18px;
       padding:clamp(1.5rem,3vw,2.1rem) clamp(1.25rem,3vw,2.25rem);
@@ -246,7 +230,6 @@ st.markdown(
       font-size:.8125rem !important; color:#EAF2EE !important;
   }
 
-  /* ---------- encabezado de sección ---------- */
   .page-head { display:flex; align-items:center; gap:.85rem; margin:.2rem 0 1.15rem; }
   .page-head > div:last-child { min-width:0; }
   .page-head .icon {
@@ -258,7 +241,6 @@ st.markdown(
   .page-head p { margin:0 !important; color:var(--texto-2) !important;
                  font-size:.9375rem !important; }
 
-  /* ---------- métricas ---------- */
   div[data-testid="stMetric"] {
       background:#fff; border:1px solid var(--linea);
       border-radius:var(--radio); padding:.9rem 1rem;
@@ -266,7 +248,6 @@ st.markdown(
   }
   div[data-testid="stMetric"] label { color:var(--texto-2) !important; }
 
-  /* ---------- pestañas ---------- */
   .stTabs [role="tablist"] { gap:.15rem; border-bottom:1px solid var(--linea); }
   .stTabs [data-testid="stTab"] {
       padding:.8rem .7rem !important; border-radius:9px 9px 0 0;
@@ -282,7 +263,6 @@ st.markdown(
       outline:2px solid var(--acento-osc); outline-offset:-2px;
   }
 
-  /* ---------- botones ---------- */
   .stButton > button, .stDownloadButton > button {
       border-radius:10px !important; font-weight:600 !important;
       font-size:.9375rem !important; border:1px solid var(--linea-2) !important;
@@ -305,7 +285,6 @@ st.markdown(
   }
   button:disabled { opacity:.55; }
 
-  /* ---------- tablas y avisos ---------- */
   div[data-testid="stDataFrame"] { border:1px solid var(--linea); border-radius:12px; overflow:hidden; }
   .nota {
       background:#FFF8EC; border:1px solid #F4D9A6; border-left:4px solid #D9822B;
@@ -329,7 +308,6 @@ st.markdown(
   .footer { text-align:center; color:var(--texto-3) !important;
             font-size:.8125rem !important; padding:2rem 0 .75rem; }
 
-  /* ---------- responsive: las columnas se envuelven en vez de aplastarse ---------- */
   [data-testid="stColumn"] { min-width:200px; }
   [data-testid="stMainBlockContainer"] { max-width:1460px; margin-inline:auto; }
   @media (max-width:700px) {
@@ -339,7 +317,6 @@ st.markdown(
       .page-head h1 { font-size:1.5rem !important; }
   }
 
-  /* ---------- movimiento reducido ---------- */
   @media (prefers-reduced-motion:reduce) {
       *, *::before, *::after {
           animation-duration:.01ms !important; animation-iteration-count:1 !important;
@@ -356,12 +333,12 @@ st.markdown(
 # Utilidades de persistencia
 # --------------------------------------------------------------------------- #
 def _safe_name(name: str) -> str:
-    name = re.sub(r"[^A-Za-z0-9._-]+", "_", str(name)).strip("._")
-    return name[:80] or "archivo"
+    cleaned = re.sub(r"[^A-Za-z0-9._-]+", "_", str(name)).strip("._")
+    return cleaned[:80] or "archivo"
 
 
 def save_dataset(df: pd.DataFrame, costs: pd.DataFrame | None, source: str) -> None:
-    """Guarda el dataset limpio y el catálogo de costos para sobrevivir reinicios."""
+    """Guarda el dataset limpio, catálogo de costos y metadatos en disco."""
     try:
         CURRENT_DIR.mkdir(parents=True, exist_ok=True)
         df.to_csv(CURRENT_DIR / "dataset.csv", index=False)
@@ -370,42 +347,35 @@ def save_dataset(df: pd.DataFrame, costs: pd.DataFrame | None, source: str) -> N
             costs.to_csv(costs_path, index=False)
         elif costs_path.exists():
             costs_path.unlink()
+        meta = {
+            "source": _safe_name(source),
+            "saved_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "rows": int(len(df)),
+            "columns": int(df.shape[1]),
+            "log": list(S.get("log", [])),
+        }
         (CURRENT_DIR / "meta.json").write_text(
-            json.dumps(
-                {
-                    "source": source,
-                    "saved_at": time.strftime("%Y-%m-%d %H:%M:%S"),
-                    "rows": int(len(df)),
-                    "columns": int(df.shape[1]),
-                    "log": list(S.get("log", [])),
-                },
-                ensure_ascii=False,
-                indent=2,
-            ),
+            json.dumps(meta, ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
-    except Exception as exc:  # la persistencia nunca debe romper la app
+    except Exception as exc:
         st.warning(f"No se pudo guardar la sesión en disco: {exc}")
 
 
 def load_saved() -> tuple[pd.DataFrame, pd.DataFrame | None, dict] | None:
     """Recupera la última sesión guardada (datos + costos + metadatos)."""
-    f = CURRENT_DIR / "dataset.csv"
-    if not f.exists():
+    dataset_path = CURRENT_DIR / "dataset.csv"
+    if not dataset_path.exists():
         return None
     try:
-        df = pd.read_csv(f)
-        for c in dp.DATES:
-            if c in df:
-                df[c] = pd.to_datetime(df[c], errors="coerce")
-        costs = None
-        cf = CURRENT_DIR / "costs.csv"
-        if cf.exists():
-            costs = pd.read_csv(cf)
-        meta = {}
-        mf = CURRENT_DIR / "meta.json"
-        if mf.exists():
-            meta = json.loads(mf.read_text(encoding="utf-8"))
+        df = pd.read_csv(dataset_path)
+        for col in getattr(dp, "DATES", ()):
+            if col in df:
+                df[col] = pd.to_datetime(df[col], errors="coerce")
+        costs_path = CURRENT_DIR / "costs.csv"
+        costs = pd.read_csv(costs_path) if costs_path.exists() else None
+        meta_path = CURRENT_DIR / "meta.json"
+        meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {}
         return df, costs, meta
     except Exception:
         return None
@@ -413,9 +383,9 @@ def load_saved() -> tuple[pd.DataFrame, pd.DataFrame | None, dict] | None:
 
 def clear_saved() -> None:
     for name in ("dataset.csv", "costs.csv", "meta.json"):
-        p = CURRENT_DIR / name
-        if p.exists():
-            p.unlink()
+        path = CURRENT_DIR / name
+        if path.exists():
+            path.unlink()
 
 
 def model_on_disk(kind: str) -> Path:
@@ -423,30 +393,29 @@ def model_on_disk(kind: str) -> Path:
 
 
 def load_model_from_disk(kind: str) -> dict | None:
-    """Carga un modelo entrenado previamente. Devuelve un resumen para la UI."""
-    p = model_on_disk(kind)
-    if not p.exists():
+    path = model_on_disk(kind)
+    if not path.exists():
         return None
     try:
-        b = joblib.load(p)
-        out = {
+        bundle = joblib.load(path)
+        return {
             "viable": True,
             "from_disk": True,
-            "mejor": b.get("nombre", "modelo guardado"),
-            "metrics": b.get("metrics"),
-            "umbrales": b.get("umbrales"),
-            "tipo_resultado": b.get("tipo_resultado"),
+            "mejor": bundle.get("nombre", "modelo guardado"),
+            "metrics": bundle.get("metrics"),
+            "umbrales": bundle.get("umbrales"),
+            "tipo_resultado": bundle.get("tipo_resultado"),
         }
-        return out
     except Exception:
         return None
 
 
 def hydrate_once() -> None:
-    """Al abrir la app: recupera datos y modelos persistidos (solo una vez)."""
+    """Recupera sesión y modelos persistidos una sola vez al iniciar."""
     if S.get("_booted"):
         return
     S["_booted"] = True
+
     saved = load_saved()
     if saved:
         df, costs, meta = saved
@@ -455,27 +424,25 @@ def hydrate_once() -> None:
         S["log"] = meta.get("log") or ["Sesión recuperada desde el almacenamiento persistente."]
     elif os.getenv("AUTO_LOAD_DEMO", "0") == "1" and DEMO_FILE.exists():
         try:
-            raw = dp.load_file(DEMO_FILE)
-            df, log = dp.clean(raw)
-            S["df"], S["log"], S["source"] = df, log, DEMO_FILE.name
-            S["demo"] = True
+            df, log = dp.clean(dp.load_file(DEMO_FILE))
+            S["df"], S["log"], S["source"], S["demo"] = df, log, DEMO_FILE.name, True
         except Exception:
             pass
+
     for kind in ("prof", "ret"):
         if kind not in S:
-            m = load_model_from_disk(kind)
-            if m:
-                S[kind] = m
+            loaded = load_model_from_disk(kind)
+            if loaded:
+                S[kind] = loaded
 
 
 hydrate_once()
 
 
 # --------------------------------------------------------------------------- #
-# Utilidades de UI
+# Helpers de datos, métricas y UI
 # --------------------------------------------------------------------------- #
 def page_head(icon: str, title: str, subtitle: str) -> None:
-    """icon: clave del set ICONS (nunca un emoji)."""
     st.markdown(
         f'<div class="page-head"><div class="icon">{_svg(icon, 24)}</div>'
         f"<div><h1>{title}</h1><p>{subtitle}</p></div></div>",
@@ -506,7 +473,6 @@ def hero() -> None:
 
 
 def money(x: float) -> str:
-    """Cifra con signo tipográfico y agrupación de miles (evita el guion ASCII)."""
     if x is None or pd.isna(x):
         return "N/D"
     sign = "\u2212" if x < 0 else ""
@@ -525,14 +491,12 @@ def chart(fig: go.Figure, height: int | None = None) -> None:
         template="plotly_white",
         colorway=COLORES,
         margin=dict(l=10, r=10, t=52, b=64),
-        font=dict(family="system-ui, -apple-system, Segoe UI, sans-serif",
-                  color=AZUL, size=13),
+        font=dict(family="system-ui, -apple-system, Segoe UI, sans-serif", color=AZUL, size=13),
         title=dict(font=dict(size=15, color=AZUL), x=0.01),
         legend=dict(orientation="h", yanchor="top", y=-0.18, x=0),
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
     )
-    # Etiquetas de ejes y leyenda: mínimo 13 px (heredar de layout.font no basta).
     fig.update_xaxes(tickfont=dict(size=13, color=AZUL), title_font=dict(size=13, color=AZUL))
     fig.update_yaxes(tickfont=dict(size=13, color=AZUL), title_font=dict(size=13, color=AZUL))
     fig.update_layout(legend_font=dict(size=13, color=AZUL))
@@ -544,14 +508,8 @@ def chart(fig: go.Figure, height: int | None = None) -> None:
 def data_table(df: pd.DataFrame, height: int | None = None) -> None:
     kwargs = {}
     if height:
-        # No pedir más alto de lo que la tabla ocupa: evita filas vacías al final.
-        height = max(96, min(height, 38 + max(len(df), 1) * 35))
-        kwargs["height"] = height
+        kwargs["height"] = max(96, min(height, 38 + max(len(df), 1) * 35))
     st.dataframe(df, width="stretch", hide_index=True, **kwargs)
-
-
-def go_to(section: str) -> None:
-    S["menu"] = section
 
 
 def require_data() -> pd.DataFrame:
@@ -566,7 +524,7 @@ def require_data() -> pd.DataFrame:
 
 
 def filtered() -> pd.DataFrame:
-    """Datos con economía calculada + filtros globales de la barra lateral."""
+    """Calcula economía y aplica filtros globales de fecha y SKU."""
     d = pm.add_economics(require_data(), S.get("costs"))
     with st.sidebar:
         st.markdown("#### Filtros")
@@ -587,13 +545,44 @@ def filtered() -> pd.DataFrame:
     return d
 
 
+def _summary_stats(d: pd.DataFrame) -> dict:
+    parcial = bool(d["tipo_resultado"].ne("estimado con costo").any()) if "tipo_resultado" in d else True
+    dg = rm.diagnose(d)
+    ver = dg.get("devoluciones(1)", 0) + dg.get("no_devoluciones(0)", 0)
+    tasa_dev = dg.get("devoluciones(1)", 0) / ver if ver else np.nan
+    ingresos = d["ingresos_productos"].sum() if "ingresos_productos" in d else np.nan
+    resultado = d["resultado_economico"].sum() if "resultado_economico" in d else np.nan
+    return {
+        "parcial": parcial,
+        "dg": dg,
+        "ver": ver,
+        "tasa_dev": tasa_dev,
+        "ingresos": ingresos,
+        "resultado": resultado,
+    }
+
+
+def _top_sku_bar(g: pd.DataFrame, metric: str, title: str, color: str, height: int) -> None:
+    top = g.nlargest(10, metric).sort_values(metric)
+    chart(
+        px.bar(top, x=metric, y="sku", orientation="h", title=title, color_discrete_sequence=[color]),
+        height,
+    )
+
+
+def _best_metric_row(result: dict) -> pd.Series | None:
+    metrics = result.get("metrics")
+    if metrics is None or not len(metrics) or "Modelo" not in metrics:
+        return None
+    matches = metrics[metrics["Modelo"] == result.get("mejor")]
+    return matches.iloc[0] if len(matches) else metrics.iloc[0]
+
+
 def load_demo() -> bool:
-    """Carga el CSV simulado incluido en el proyecto."""
     if not DEMO_FILE.exists():
         st.error("No se encontró `data/demo_simulado.csv`.")
         return False
-    raw = dp.load_file(DEMO_FILE)
-    df, log = dp.clean(raw)
+    df, log = dp.clean(dp.load_file(DEMO_FILE))
     S["df"], S["log"], S["source"], S["demo"] = df, log, DEMO_FILE.name, True
     S.pop("prof", None)
     S.pop("ret", None)
@@ -601,24 +590,25 @@ def load_demo() -> bool:
     return True
 
 
-def train_profitability() -> None:
-    with st.spinner("Entrenando y comparando modelos de rentabilidad…"):
-        r = pm.train(S["df"], S.get("costs"), models_dir=str(MODELS_DIR))
-    S["prof"] = r
-    if r.get("viable"):
-        st.toast(f"Modelo de rentabilidad listo: {r['mejor']}")
+def _run_training(kind: str) -> None:
+    is_prof = kind == "prof"
+    spinner_msg = (
+        "Entrenando y comparando modelos de rentabilidad…"
+        if is_prof
+        else "Entrenando y comparando modelos de devoluciones…"
+    )
+    with st.spinner(spinner_msg):
+        res = (
+            pm.train(S["df"], S.get("costs"), models_dir=str(MODELS_DIR))
+            if is_prof
+            else rm.train(S["df"], models_dir=str(MODELS_DIR))
+        )
+    S[kind] = res
+    if res.get("viable"):
+        etiqueta = "rentabilidad" if is_prof else "devoluciones"
+        st.toast(f"Modelo de {etiqueta} listo: {res['mejor']}")
     else:
-        st.toast("El modelo de rentabilidad no es viable con estos datos. Revisa el volumen de datos.")
-
-
-def train_returns() -> None:
-    with st.spinner("Entrenando y comparando modelos de devoluciones…"):
-        r = rm.train(S["df"], models_dir=str(MODELS_DIR))
-    S["ret"] = r
-    if r.get("viable"):
-        st.toast(f"Modelo de devoluciones listo: {r['mejor']}")
-    else:
-        st.toast("El modelo de devoluciones no es viable con estos datos. Revisa el volumen de datos.")
+        st.toast("El modelo no es viable con estos datos. Revisa el volumen de datos.")
 
 
 def model_badge(kind: str) -> str:
@@ -648,9 +638,7 @@ with st.sidebar:
         df0 = S["df"]
         rango = ""
         if "fecha_venta" in df0 and df0.fecha_venta.notna().any():
-            rango = (
-                f"{df0.fecha_venta.min():%d/%m/%Y} – {df0.fecha_venta.max():%d/%m/%Y}"
-            )
+            rango = f"{df0.fecha_venta.min():%d/%m/%Y} – {df0.fecha_venta.max():%d/%m/%Y}"
         n_skus = df0.sku.nunique() if "sku" in df0 else "N/D"
         st.markdown(
             '<div class="side-card"><b>Conjunto activo</b>'
@@ -677,7 +665,7 @@ with st.sidebar:
 
 
 # --------------------------------------------------------------------------- #
-# Inicio
+# Vistas
 # --------------------------------------------------------------------------- #
 if sec == "Inicio":
     hero()
@@ -721,31 +709,28 @@ if sec == "Inicio":
         st.warning("El filtro actual no devuelve ventas. Amplía el rango de fechas o los SKUs.")
         st.stop()
 
-    parcial = bool((d.tipo_resultado != "estimado con costo").any())
-    dg = rm.diagnose(d)
-    ver = dg["devoluciones(1)"] + dg["no_devoluciones(0)"]
-    tasa_dev = dg["devoluciones(1)"] / ver if ver else np.nan
-
+    stats = _summary_stats(d)
+    dg = stats["dg"]
     c = st.columns(5)
     c[0].metric("Ventas", f"{len(d):,}", help="Filas del reporte dentro del filtro actual.")
     c[1].metric(
         "Ingresos por producto",
-        money(d.get("ingresos_productos", pd.Series(dtype=float)).sum()),
+        money(stats["ingresos"]),
         help="Ingresos brutos por productos antes de cargos, envíos y reembolsos.",
     )
     c[2].metric(
-        ("Resultado PARCIAL" if parcial else "Resultado estimado"),
-        money(d.resultado_economico.sum()),
+        "Resultado PARCIAL" if stats["parcial"] else "Resultado estimado",
+        money(stats["resultado"]),
         help="Total de Mercado Libre menos costo de adquisición (si existe catálogo).",
     )
     c[3].metric("SKUs activos", d.sku.nunique() if "sku" in d else "N/D")
     c[4].metric(
         "Tasa de devolución",
-        pct(tasa_dev),
-        help=f"{dg['devoluciones(1)']} devoluciones verificadas sobre {ver} ventas con resultado verificable.",
+        pct(stats["tasa_dev"]),
+        help=f"{dg.get('devoluciones(1)', 0)} devoluciones verificadas sobre {stats['ver']} ventas con resultado verificable.",
     )
 
-    if parcial:
+    if stats["parcial"]:
         st.markdown(
             '<div class="nota">Sin catálogo de costos el resultado es <b>parcial</b> '
             "(no es utilidad neta). Cárgalo en <i>Carga de datos</i> para obtener el resultado estimado.</div>",
@@ -755,7 +740,7 @@ if sec == "Inicio":
     t1, t2, t3 = st.tabs(["Evolución mensual", "Top SKUs", "Actividad reciente"])
 
     with t1:
-        if "fecha_venta" in d and d.fecha_venta.notna().any():
+        if "fecha_venta" in d and d.fecha_venta.notna().any() and "resultado_economico" in d:
             m = (
                 d.set_index("fecha_venta")
                 .resample("MS")
@@ -780,54 +765,39 @@ if sec == "Inicio":
             )
             chart(fig, 380)
         else:
-            st.info("El conjunto no tiene fechas de venta válidas.")
+            st.info("El conjunto no tiene fechas de venta válidas o columna de resultado económico.")
 
     with t2:
-        if "sku" in d:
+        if "sku" in d and "resultado_economico" in d:
             g = (
                 d.groupby("sku")
                 .agg(
                     ventas=("id_venta", "count"),
-                    ingresos=("ingresos_productos", "sum"),
+                    ingresos=("ingresos_productos", "sum") if "ingresos_productos" in d else ("id_venta", "count"),
                     resultado=("resultado_economico", "sum"),
                 )
                 .reset_index()
             )
             a, b = st.columns(2)
             with a:
-                chart(
-                    px.bar(
-                        g.nlargest(10, "ventas").sort_values("ventas"),
-                        x="ventas", y="sku", orientation="h",
-                        title="SKUs con más ventas", color_discrete_sequence=[VERDE],
-                    ),
-                    360,
-                )
+                _top_sku_bar(g, "ventas", "SKUs con más ventas", VERDE, 360)
             with b:
-                chart(
-                    px.bar(
-                        g.nlargest(10, "resultado").sort_values("resultado"),
-                        x="resultado", y="sku", orientation="h",
-                        title="SKUs con mayor resultado", color_discrete_sequence=[AZUL_2],
-                    ),
-                    360,
-                )
+                _top_sku_bar(g, "resultado", "SKUs con mayor resultado", AZUL_2, 360)
         else:
-            st.info("El conjunto no incluye la columna SKU.")
+            st.info("El conjunto no incluye las columnas requeridas de SKU y resultado económico.")
 
     with t3:
         cols = [
-            c
-            for c in ["id_venta", "fecha_venta", "sku", "estado", "unidades",
-                      "ingresos_productos", "resultado_economico", "tipo_resultado"]
-            if c in d
+            col for col in [
+                "id_venta", "fecha_venta", "sku", "estado", "unidades",
+                "ingresos_productos", "resultado_economico", "tipo_resultado",
+            ]
+            if col in d
         ]
-        data_table(d[cols].sort_values("fecha_venta", ascending=False).head(25), 380)
+        recent = d[cols].sort_values("fecha_venta", ascending=False).head(25) if "fecha_venta" in d else d[cols].head(25)
+        data_table(recent, 380)
 
 
-# --------------------------------------------------------------------------- #
-# Carga de datos
-# --------------------------------------------------------------------------- #
 elif sec == "Carga de datos":
     if S.pop("_flash", None):
         st.success("Datos y modelos borrados. Vuelve a cargar un reporte para empezar.")
@@ -847,19 +817,19 @@ elif sec == "Carga de datos":
             if S.get("_upload_sig") != firma:
                 try:
                     with st.spinner("Leyendo y limpiando el archivo…"):
-                        raw = dp.load_file(f)
-                        df, log = dp.clean(raw)
+                        df, log = dp.clean(dp.load_file(f))
                     S["df"], S["log"], S["source"] = df, log, f.name
-                    S.pop("demo", None)
-                    S.pop("prof", None)
-                    S.pop("ret", None)
+                    for key in ("demo", "prof", "ret"):
+                        S.pop(key, None)
                     S["_upload_sig"] = firma
                     save_dataset(df, S.get("costs"), f.name)
                     st.toast(f"{len(df):,} filas cargadas y guardadas")
                     st.rerun()
                 except Exception as exc:
-                    st.error(f"No se pudo leer el archivo {f.name}. Revisa que sea un export "
-                         f"de Mercado Libre en Excel o CSV. Detalle: {exc}")
+                    st.error(
+                        f"No se pudo leer el archivo {f.name}. Revisa que sea un export "
+                        f"de Mercado Libre en Excel o CSV. Detalle: {exc}"
+                    )
                     S.pop("_upload_sig", None)
 
         if st.button("Usar datos de demostración", width="stretch"):
@@ -880,7 +850,7 @@ elif sec == "Carga de datos":
             if S.get("_costs_sig") != firma:
                 try:
                     costs = pd.read_csv(cf) if cf.name.lower().endswith(".csv") else pd.read_excel(cf)
-                    costs.columns = [str(c).strip().lower() for c in costs.columns]
+                    costs.columns = [str(col).strip().lower() for col in costs.columns]
                     if not {"sku", "costo_unitario"} <= set(costs.columns):
                         raise ValueError("El catálogo debe tener las columnas 'sku' y 'costo_unitario'.")
                     S["costs"] = costs
@@ -890,8 +860,10 @@ elif sec == "Carga de datos":
                     st.toast(f"{len(costs):,} costos cargados")
                     st.rerun()
                 except Exception as exc:
-                    st.error(f"No se pudo leer el catálogo {cf.name}. Debe ser CSV o Excel con las "
-                         f"columnas sku y costo_unitario. Detalle: {exc}")
+                    st.error(
+                        f"No se pudo leer el catálogo {cf.name}. Debe ser CSV o Excel con las "
+                        f"columnas sku y costo_unitario. Detalle: {exc}"
+                    )
         if S.get("costs") is not None:
             st.success(f"Catálogo activo: {len(S['costs']):,} SKUs con costo unitario.")
             st.caption("El resultado económico se recalcula automáticamente con estos costos.")
@@ -917,8 +889,8 @@ elif sec == "Carga de datos":
     t1, t2, t3, t4 = st.tabs(["Limpieza", "Calidad", "Devoluciones", "Vista previa"])
     with t1:
         st.markdown("**Decisiones aplicadas**")
-        for x in S.get("log", []):
-            st.markdown(f"- {x}")
+        for item in S.get("log", []):
+            st.markdown(f"- {item}")
     with t2:
         a, b, c = st.columns(3)
         a.metric("Filas", f"{rep['filas']:,}")
@@ -928,11 +900,19 @@ elif sec == "Carga de datos":
         with x:
             st.write("**Inconsistencias**")
             inc = rep.get("inconsistencias", {})
-            data_table(pd.DataFrame({"hallazgo": list(inc), "casos": list(inc.values())}) if inc else pd.DataFrame({"hallazgo": ["Sin hallazgos"]}))
+            data_table(
+                pd.DataFrame({"hallazgo": list(inc), "casos": list(inc.values())})
+                if inc
+                else pd.DataFrame({"hallazgo": ["Sin hallazgos"]})
+            )
         with y:
             st.write("**Atípicos (IQR × 3)**")
             at = rep.get("atipicos_iqr3", {})
-            data_table(pd.DataFrame({"columna": list(at), "casos": list(at.values())}) if at else pd.DataFrame({"columna": ["Sin atípicos"]}))
+            data_table(
+                pd.DataFrame({"columna": list(at), "casos": list(at.values())})
+                if at
+                else pd.DataFrame({"columna": ["Sin atípicos"]})
+            )
         st.write("**Porcentaje de valores faltantes**")
         falt = rep["faltantes_pct"].reset_index()
         falt.columns = ["columna", "faltantes_pct"]
@@ -975,16 +955,13 @@ elif sec == "Carga de datos":
             width="stretch",
         ):
             clear_saved()
-            for k in ("df", "costs", "log", "meta", "source", "prof", "ret", "_upload_sig", "_costs_sig", "demo"):
-                S.pop(k, None)
+            for key in ("df", "costs", "log", "meta", "source", "prof", "ret", "_upload_sig", "_costs_sig", "demo"):
+                S.pop(key, None)
             S["_flash"] = "Datos y modelos borrados. Vuelve a cargar un reporte para empezar."
             S.pop("confirmar_borrar", None)
             st.rerun()
 
 
-# --------------------------------------------------------------------------- #
-# Análisis exploratorio
-# --------------------------------------------------------------------------- #
 elif sec == "Análisis exploratorio":
     page_head("exploratorio", "Análisis exploratorio", "Panorama de productos, envíos y evolución del negocio.")
     d = filtered()
@@ -995,7 +972,7 @@ elif sec == "Análisis exploratorio":
     t1, t2, t3 = st.tabs(["Productos", "Envíos", "Importes"])
 
     with t1:
-        if "sku" in d:
+        if "sku" in d and "ingresos_productos" in d and "resultado_economico" in d:
             g = (
                 d.groupby("sku")
                 .agg(
@@ -1008,29 +985,13 @@ elif sec == "Análisis exploratorio":
             )
             a, b = st.columns(2)
             with a:
-                chart(
-                    px.bar(
-                        g.nlargest(10, "ventas").sort_values("ventas"),
-                        x="ventas", y="sku", orientation="h",
-                        title="Más vendidos (unidades de venta)",
-                        color_discrete_sequence=[VERDE],
-                    ),
-                    380,
-                )
+                _top_sku_bar(g, "ventas", "Más vendidos (unidades de venta)", VERDE, 380)
             with b:
-                chart(
-                    px.bar(
-                        g.nlargest(10, "ingresos").sort_values("ingresos"),
-                        x="ingresos", y="sku", orientation="h",
-                        title="Mayores ingresos por producto",
-                        color_discrete_sequence=[AZUL_2],
-                    ),
-                    380,
-                )
+                _top_sku_bar(g, "ingresos", "Mayores ingresos por producto", AZUL_2, 380)
             st.write("**Detalle por SKU**")
             data_table(g, 320)
         else:
-            st.info("El conjunto no incluye SKU.")
+            st.info("El conjunto no incluye las columnas de SKU e importes requeridas.")
 
     with t2:
         if "transportista" in d and "costos_envio" in d:
@@ -1083,7 +1044,7 @@ elif sec == "Análisis exploratorio":
                 ),
                 360,
             )
-        if "resultado_economico" in d:
+        if "resultado_economico" in d and "tipo_resultado" in d:
             chart(
                 px.box(
                     d, x="tipo_resultado", y="resultado_economico",
@@ -1092,16 +1053,18 @@ elif sec == "Análisis exploratorio":
                 ),
                 360,
             )
-        cols = [c for c in ["ingresos_productos", "cargo_venta", "ingresos_envio",
-                            "costos_envio", "descuentos", "anulaciones", "resultado_economico"] if c in d]
+        cols = [
+            col for col in [
+                "ingresos_productos", "cargo_venta", "ingresos_envio",
+                "costos_envio", "descuentos", "anulaciones", "resultado_economico",
+            ]
+            if col in d
+        ]
         if cols:
             st.write("**Resumen estadístico (MXN)**")
             data_table(d[cols].describe().T.round(2), 300)
 
 
-# --------------------------------------------------------------------------- #
-# Rentabilidad
-# --------------------------------------------------------------------------- #
 elif sec == "Rentabilidad":
     page_head("rentabilidad", "Rentabilidad", "Resultado económico por venta y modelos de regresión comparados.")
     d = filtered()
@@ -1118,25 +1081,25 @@ elif sec == "Rentabilidad":
             type="primary",
             width="stretch",
         ):
-            train_profitability()
+            _run_training("prof")
             st.rerun()
         if S.get("prof", {}).get("from_disk"):
             st.info("Modelo recuperado del disco. Reentrena para ver importancia y predicciones.")
     with der:
         r = S.get("prof")
         if r and r.get("viable"):
-            m = r["metrics"]
-            mejor_row = m[m["Modelo"] == r["mejor"]].iloc[0]
+            mejor_row = _best_metric_row(r)
             a, b, c = st.columns(3)
             a.metric("Mejor modelo", r["mejor"])
-            b.metric("RMSE (prueba)", f"{mejor_row['RMSE']:,.2f}")
-            c.metric("R² (prueba)", f"{mejor_row['R2']:.3f}")
-            if r.get("periodo_train"):
+            b.metric("RMSE (prueba)", f"{mejor_row['RMSE']:,.2f}" if mejor_row is not None and "RMSE" in mejor_row else "N/D")
+            c.metric("R² (prueba)", f"{mejor_row['R2']:.3f}" if mejor_row is not None and "R2" in mejor_row else "N/D")
+            if r.get("periodo_train") and r.get("periodo_test"):
                 st.caption(
                     f"Entrenamiento: {r['periodo_train'][0]:%d/%m/%Y} → {r['periodo_train'][1]:%d/%m/%Y} · "
                     f"Prueba: {r['periodo_test'][0]:%d/%m/%Y} → {r['periodo_test'][1]:%d/%m/%Y}"
                 )
-            data_table(m.round(3).rename(columns={"R2": "R²"}))
+            if r.get("metrics") is not None:
+                data_table(r["metrics"].round(3).rename(columns={"R2": "R²"}))
         elif r and not r.get("viable"):
             st.error(r.get("razon", "Modelo no viable."))
         else:
@@ -1147,51 +1110,49 @@ elif sec == "Rentabilidad":
             )
 
     r = S.get("prof")
-    if r and r.get("viable"):
-        if r.get("importancia") is not None:
-            st.divider()
-            a, b = st.columns([1.15, 1])
-            with a:
-                imp = r["importancia"].head(10).sort_values("importancia")
-                chart(
-                    px.bar(
-                        imp, x="importancia", y="variable", orientation="h",
-                        title="Importancia por permutación (asociación, no causalidad)",
-                        color="importancia", color_continuous_scale=["#A8DADC", VERDE],
-                    ),
-                    400,
+    if r and r.get("viable") and r.get("importancia") is not None:
+        st.divider()
+        a, b = st.columns([1.15, 1])
+        with a:
+            imp = r["importancia"].head(10).sort_values("importancia")
+            chart(
+                px.bar(
+                    imp, x="importancia", y="variable", orientation="h",
+                    title="Importancia por permutación (asociación, no causalidad)",
+                    color="importancia", color_continuous_scale=["#A8DADC", VERDE],
+                ),
+                400,
+            )
+        with b:
+            preds = r.get("predicciones")
+            if preds is not None and len(preds):
+                lo = float(min(preds.real.min(), preds.predicho.min()))
+                hi = float(max(preds.real.max(), preds.predicho.max()))
+                fig = go.Figure()
+                fig.add_scatter(
+                    x=preds.real, y=preds.predicho, mode="markers", name="Ventas",
+                    marker=dict(color=VERDE, size=7, opacity=.6),
                 )
-            with b:
-                if r.get("predicciones") is not None and len(r["predicciones"]):
-                    p = r["predicciones"]
-                    lo = float(min(p.real.min(), p.predicho.min()))
-                    hi = float(max(p.real.max(), p.predicho.max()))
-                    fig = go.Figure()
-                    fig.add_scatter(
-                        x=p.real, y=p.predicho, mode="markers", name="Ventas",
-                        marker=dict(color=VERDE, size=7, opacity=.6),
-                    )
-                    fig.add_scatter(
-                        x=[lo, hi], y=[lo, hi], mode="lines", name="Predicción perfecta",
-                        line=dict(color=AZUL_2, dash="dash"),
-                    )
-                    fig.update_layout(title="Real vs predicho (conjunto de prueba)",
-                                      xaxis_title="Resultado real (MXN)",
-                                      yaxis_title="Resultado predicho (MXN)")
-                    chart(fig, 400)
-                else:
-                    st.info("Reentrena el modelo para generar las predicciones de prueba.")
+                fig.add_scatter(
+                    x=[lo, hi], y=[lo, hi], mode="lines", name="Predicción perfecta",
+                    line=dict(color=AZUL_2, dash="dash"),
+                )
+                fig.update_layout(
+                    title="Real vs predicho (conjunto de prueba)",
+                    xaxis_title="Resultado real (MXN)",
+                    yaxis_title="Resultado predicho (MXN)",
+                )
+                chart(fig, 400)
+            else:
+                st.info("Reentrena el modelo para generar las predicciones de prueba.")
 
-    if "sku" in d and len(d):
+    if "sku" in d and "resultado_economico" in d and len(d):
         st.divider()
         st.markdown("#### Resultado económico por SKU")
         g = d.groupby("sku").resultado_economico.sum().sort_values()
         if len(g) <= 20:
             st.write("**Ranking completo**")
-            data_table(
-                g.reset_index().rename(columns={"resultado_economico": "resultado"}),
-                360,
-            )
+            data_table(g.reset_index().rename(columns={"resultado_economico": "resultado"}), 360)
         else:
             a, b = st.columns(2)
             with a:
@@ -1202,9 +1163,6 @@ elif sec == "Rentabilidad":
                 data_table(g.tail(10)[::-1].reset_index().rename(columns={"resultado_economico": "resultado"}), 320)
 
 
-# --------------------------------------------------------------------------- #
-# Predicción de devoluciones
-# --------------------------------------------------------------------------- #
 elif sec == "Predicción de devoluciones":
     page_head("devoluciones", "Predicción de devoluciones", "Clasificación del riesgo relativo con evidencia verificable.")
     d = require_data()
@@ -1228,19 +1186,19 @@ elif sec == "Predicción de devoluciones":
             type="primary",
             width="stretch",
         ):
-            train_returns()
+            _run_training("ret")
             st.rerun()
         if S.get("ret", {}).get("from_disk"):
             st.info("Modelo recuperado del disco. Reentrena para ver importancia y umbrales nuevos.")
     with der:
         r = S.get("ret")
         if r and r.get("viable"):
+            best = _best_metric_row(r)
             a, b, c = st.columns(3)
             a.metric("Mejor modelo", r["mejor"])
+            b.metric("ROC-AUC", f"{best['ROC-AUC']:.3f}" if best is not None and "ROC-AUC" in best else "N/D")
+            c.metric("F1", f"{best['F1']:.3f}" if best is not None and "F1" in best else "N/D")
             if r.get("metrics") is not None:
-                best = r["metrics"][r["metrics"]["Modelo"] == r["mejor"]].iloc[0]
-                b.metric("ROC-AUC", f"{best['ROC-AUC']:.3f}")
-                c.metric("F1", f"{best['F1']:.3f}")
                 data_table(r["metrics"].round(3))
         elif r and not r.get("viable"):
             st.error(r.get("razon", "Modelo no viable."))
@@ -1282,8 +1240,8 @@ elif sec == "Predicción de devoluciones":
                 ),
                 320,
             )
-            cols = [c for c in ["id_venta", "sku", "transportista", "prob_devolucion", "riesgo"] if c in out]
-            tabla = out[cols].sort_values("prob_devolucion", ascending=False).head(100)
+            cols = [col for col in ["id_venta", "sku", "transportista", "prob_devolucion", "riesgo"] if col in out]
+            tabla = out[cols].sort_values("prob_devolucion", ascending=False).head(100) if "prob_devolucion" in out else out[cols].head(100)
             if "prob_devolucion" in tabla:
                 tabla["prob_devolucion"] = tabla["prob_devolucion"].round(3)
             data_table(tabla, 420)
@@ -1296,9 +1254,6 @@ elif sec == "Predicción de devoluciones":
             )
 
 
-# --------------------------------------------------------------------------- #
-# Comparación de modelos
-# --------------------------------------------------------------------------- #
 elif sec == "Comparación de modelos":
     page_head("comparacion", "Comparación de modelos", "Métricas lado a lado para elegir con criterio.")
     t1, t2 = st.tabs(["Rentabilidad", "Devoluciones"])
@@ -1343,9 +1298,6 @@ elif sec == "Comparación de modelos":
             st.info("Entrena el modelo de devoluciones para ver la comparación.")
 
 
-# --------------------------------------------------------------------------- #
-# Recomendaciones
-# --------------------------------------------------------------------------- #
 elif sec == "Recomendaciones inteligentes":
     page_head("recomendaciones", "Recomendaciones inteligentes", "Hallazgos accionables basados en los datos observados.")
     d = filtered()
@@ -1378,9 +1330,6 @@ elif sec == "Recomendaciones inteligentes":
     st.caption("Las recomendaciones describen asociaciones observadas; no demuestran causalidad.")
 
 
-# --------------------------------------------------------------------------- #
-# Reportes
-# --------------------------------------------------------------------------- #
 elif sec == "Reportes":
     page_head("reportes", "Reportes", "Exporta los resultados de la sesión actual.")
     d = filtered()
@@ -1422,9 +1371,8 @@ elif sec == "Reportes":
 
     st.divider()
     st.markdown("#### Resumen de la sesión")
-    parcial = bool((d.tipo_resultado != "estimado con costo").any())
-    dg = rm.diagnose(d)
-    ver = dg["devoluciones(1)"] + dg["no_devoluciones(0)"]
+    stats = _summary_stats(d)
+    dg = stats["dg"]
     resumen = pd.DataFrame(
         {
             "Indicador": [
@@ -1436,11 +1384,11 @@ elif sec == "Reportes":
                 S.get("source", "datos"),
                 f"{len(d):,}",
                 f"{d.sku.nunique() if 'sku' in d else 'N/D'}",
-                money(d.get("ingresos_productos", pd.Series(dtype=float)).sum()),
-                money(d.resultado_economico.sum()),
-                "PARCIAL (sin costos)" if parcial else "Estimado con costo",
-                f"{dg['devoluciones(1)']:,}",
-                pct(dg["devoluciones(1)"] / ver) if ver else "N/D",
+                money(stats["ingresos"]),
+                money(stats["resultado"]),
+                "PARCIAL (sin costos)" if stats["parcial"] else "Estimado con costo",
+                f"{dg.get('devoluciones(1)', 0):,}",
+                pct(stats["tasa_dev"]),
                 S.get("prof", {}).get("mejor", "No entrenado"),
                 S.get("ret", {}).get("mejor", "No entrenado"),
             ],
