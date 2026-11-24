@@ -1,10 +1,10 @@
 # Motor de Recomendaciones y Operación
 
-## Lógica de recomendaciones (`recommendations.py`)
-- **Por SKU:** identifica productos con alta probabilidad predicha de devolución o margen negativo recurrente.
-- **Por transportista / logística:** detecta desviaciones significativas en tasa de devolución frente al promedio global del catálogo.
+## Recomendaciones accionables
 
-## Operación en contenedor (`Dockerfile` / `docker-compose.yml`)
-- **Usuario:** ejecución sin privilegios `root` (`UID`/`GID` configurables).
-- **Healthcheck:** verifica disponibilidad del servidor Streamlit en el puerto `8501` antes de marcar el contenedor como `healthy`.
-- **Dependencia crítica:** `libgomp1` instalada en `python:3.12-slim` para soporte OpenMP de XGBoost.
+La pestaña **Recomendaciones inteligentes** de la interfaz presenta hallazgos accionables agrupados por **SKU** y por **transportista** (como el comportamiento de devoluciones asociado a transportistas como `DHL` o diferencias por producto).
+
+## Entorno y despliegue
+
+- **Contenedor:** construido desde `python:3.12-slim` con `libgomp1` (necesaria para XGBoost), etiqueta `mercado-libre-ai:latest`, usuario no `root` (`UID` / `GID` por defecto `1000`), `healthcheck` y puerto `8501` (`APP_PORT`).
+- **Limpieza de estado persistido:** borrar `data/current` y `models/*.joblib` y ejecutar `docker compose restart` restablece la sesión (cargando `data/demo_simulado.csv` si `AUTO_LOAD_DEMO=1`).
