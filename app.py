@@ -22,9 +22,11 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from src import data_processing as dp
+from src import multivariate as mv
 from src import profitability_model as pm
 from src import recommendations as rec
 from src import returns_model as rm
+from src import unsupervised_model as um
 
 # --------------------------------------------------------------------------- #
 # Configuración general y constantes
@@ -40,7 +42,8 @@ DATA_DIR = Path(os.getenv("DATA_DIR", "data"))
 MODELS_DIR = Path(os.getenv("MODELS_DIR", "models"))
 CURRENT_DIR = DATA_DIR / "current"
 DEMO_FILE = DATA_DIR / "demo_simulado.csv"
-MODEL_FILES = {"prof": "profitability.joblib", "ret": "returns.joblib"}
+MODEL_FILES = {"prof": "profitability.joblib", "ret": "returns.joblib",
+               "uns": "unsupervised.joblib"}
 
 VERDE = "#1E9E5A"
 AZUL = "#0B2545"
@@ -56,6 +59,7 @@ SECCIONES = [
     "Rentabilidad",
     "Predicción de devoluciones",
     "Comparación de modelos",
+    "Segmentación y anomalías",
     "Recomendaciones inteligentes",
     "Reportes",
 ]
@@ -74,6 +78,9 @@ ICONS = {
     "comparacion": '<path d="M12 4v16"/><path d="M7.5 20h9"/><path d="M4 8.5h16"/>'
                    '<path d="M4 8.5 1.8 13.2a2.6 2.6 0 0 0 4.4 0Z"/>'
                    '<path d="M20 8.5 17.8 13.2a2.6 2.6 0 0 0 4.4 0Z"/>',
+    "segmentacion": '<circle cx="7" cy="7" r="2.5"/><circle cx="17" cy="7" r="2.5"/>'
+                    '<circle cx="12" cy="17" r="2.5"/><path d="M9 8.6 11 15"/>'
+                    '<path d="m15 8.6-2 6.4"/><path d="M9.5 7h5"/>',
     "recomendaciones": '<path d="M9.5 18.5h5"/><path d="M10 21h4"/>'
                        '<path d="M12 3.5a5.5 5.5 0 0 0-3.2 9.95c.6.45 1 1.15 1 1.9v.15h4.4v-.15c0-.75.4-1.45 1-1.9A5.5 5.5 0 0 0 12 3.5Z"/>',
     "reportes": '<path d="M6.5 3.5h7l4.5 4.5v12a1 1 0 0 1-1 1h-10.5a1 1 0 0 1-1-1v-15a1 1 0 0 1 1-1Z"/>'
@@ -398,6 +405,7 @@ def load_model_from_disk(kind: str) -> dict | None:
         return None
     try:
         bundle = joblib.load(path)
+        report = bundle.get("report") or {}
         return {
             "viable": True,
             "from_disk": True,
@@ -405,6 +413,8 @@ def load_model_from_disk(kind: str) -> dict | None:
             "metrics": bundle.get("metrics"),
             "umbrales": bundle.get("umbrales"),
             "tipo_resultado": bundle.get("tipo_resultado"),
+            "seleccion": bundle.get("seleccion"),
+            **report,
         }
     except Exception:
         return None
@@ -429,7 +439,7 @@ def hydrate_once() -> None:
         except Exception:
             pass
 
-    for kind in ("prof", "ret"):
+    for kind in ("prof", "ret", "uns"):
         if kind not in S:
             loaded = load_model_from_disk(kind)
             if loaded:
@@ -586,26 +596,31 @@ def load_demo() -> bool:
     S["df"], S["log"], S["source"], S["demo"] = df, log, DEMO_FILE.name, True
     S.pop("prof", None)
     S.pop("ret", None)
+    S.pop("uns", None)
     save_dataset(df, S.get("costs"), DEMO_FILE.name)
     return True
 
 
 def _run_training(kind: str) -> None:
     is_prof = kind == "prof"
+    is_uns = kind == "uns"
     spinner_msg = (
-        "Entrenando y comparando modelos de rentabilidad…"
-        if is_prof
+        "Entrenando y comparando modelos de rentabilidad…" if is_prof
+        else "Segmentando ventas y detectando anomalías…" if is_uns
         else "Entrenando y comparando modelos de devoluciones…"
     )
     with st.spinner(spinner_msg):
-        res = (
-            pm.train(S["df"], S.get("costs"), models_dir=str(MODELS_DIR))
-            if is_prof
-            else rm.train(S["df"], models_dir=str(MODELS_DIR))
-        )
+        if is_uns:
+            res = um.fit_unsupervised(S["df"])
+            if res.get("viable"):
+                um.save_model(res, MODELS_DIR / "unsupervised.joblib")
+        elif is_prof:
+            res = pm.train(S["df"], S.get("costs"), models_dir=str(MODELS_DIR))
+        else:
+            res = rm.train(S["df"], models_dir=str(MODELS_DIR))
     S[kind] = res
     if res.get("viable"):
-        etiqueta = "rentabilidad" if is_prof else "devoluciones"
+        etiqueta = "rentabilidad" if is_prof else "devoluciones" if not is_uns else "segmentación"
         st.toast(f"Modelo de {etiqueta} listo: {res['mejor']}")
     else:
         st.toast("El modelo no es viable con estos datos. Revisa el volumen de datos.")
@@ -658,7 +673,8 @@ with st.sidebar:
     st.markdown(
         '<div class="side-card"><b>Modelos</b>'
         f'<div class="kv"><span>Rentabilidad</span><span>{model_badge("prof")}</span></div>'
-        f'<div class="kv"><span>Devoluciones</span><span>{model_badge("ret")}</span></div></div>',
+        f'<div class="kv"><span>Devoluciones</span><span>{model_badge("ret")}</span></div>'
+        f'<div class="kv"><span>Segmentación</span><span>{model_badge("uns")}</span></div></div>',
         unsafe_allow_html=True,
     )
     st.caption("El archivo original nunca se modifica. Datos personales excluidos.")
@@ -819,7 +835,7 @@ elif sec == "Carga de datos":
                     with st.spinner("Leyendo y limpiando el archivo…"):
                         df, log = dp.clean(dp.load_file(f))
                     S["df"], S["log"], S["source"] = df, log, f.name
-                    for key in ("demo", "prof", "ret"):
+                    for key in ("demo", "prof", "ret", "uns"):
                         S.pop(key, None)
                     S["_upload_sig"] = firma
                     save_dataset(df, S.get("costs"), f.name)
@@ -955,7 +971,7 @@ elif sec == "Carga de datos":
             width="stretch",
         ):
             clear_saved()
-            for key in ("df", "costs", "log", "meta", "source", "prof", "ret", "_upload_sig", "_costs_sig", "demo"):
+            for key in ("df", "costs", "log", "meta", "source", "prof", "ret", "uns", "_upload_sig", "_costs_sig", "demo"):
                 S.pop(key, None)
             S["_flash"] = "Datos y modelos borrados. Vuelve a cargar un reporte para empezar."
             S.pop("confirmar_borrar", None)
@@ -1100,6 +1116,8 @@ elif sec == "Rentabilidad":
                 )
             if r.get("metrics") is not None:
                 data_table(r["metrics"].round(3).rename(columns={"R2": "R²"}))
+            if r.get("confiable") is False:
+                st.warning(r.get("advertencia") or "El modelo no supera al baseline.")
         elif r and not r.get("viable"):
             st.error(r.get("razon", "Modelo no viable."))
         else:
@@ -1200,6 +1218,8 @@ elif sec == "Predicción de devoluciones":
             c.metric("F1", f"{best['F1']:.3f}" if best is not None and "F1" in best else "N/D")
             if r.get("metrics") is not None:
                 data_table(r["metrics"].round(3))
+            if r.get("confiable") is False:
+                st.warning(r.get("advertencia") or "El modelo no supera al baseline.")
         elif r and not r.get("viable"):
             st.error(r.get("razon", "Modelo no viable."))
         else:
@@ -1298,6 +1318,184 @@ elif sec == "Comparación de modelos":
             st.info("Entrena el modelo de devoluciones para ver la comparación.")
 
 
+elif sec == "Segmentación y anomalías":
+    page_head(
+        "segmentacion",
+        "Segmentación y anomalías",
+        "Aprendizaje no supervisado: grupos de ventas parecidas y casos atípicos.",
+    )
+    d = filtered()
+    if not len(d):
+        st.warning("El filtro actual no devuelve ventas.")
+        st.stop()
+
+    izq, der = st.columns([1.2, 2])
+    with izq:
+        st.markdown("#### Entrenamiento no supervisado")
+        st.caption(
+            "KMeans agrupa ventas parecidas usando solo variables previas a la venta "
+            "(precio, unidades, SKU, publicación, envío y fecha). El número de grupos "
+            "se elige por silueta. IsolationForest marca el 5 % más atípico."
+        )
+        if st.button(
+            "Reentrenar segmentación" if S.get("uns") else "Segmentar ventas",
+            type="primary",
+            width="stretch",
+        ):
+            _run_training("uns")
+            st.rerun()
+        if S.get("uns", {}).get("from_disk"):
+            st.info("Segmentación recuperada del disco. Reentrena para recalcular perfiles.")
+    with der:
+        u = S.get("uns")
+        if u and u.get("viable"):
+            sil = u.get("silueta")
+            if sil is None:
+                scores = u.get("silhouette_scores") or {}
+                sil = max(scores.values()) if scores else None
+            a, b, c, e = st.columns(4)
+            a.metric("Registros", f"{u.get('n_registros', len(d)):,}")
+            b.metric("Segmentos", u.get("best_k", "N/D"))
+            c.metric(
+                "Silueta",
+                f"{sil:.3f}" if sil is not None else "N/D",
+                help="Cercano a 1 = grupos bien separados; < 0.25 = estructura débil.",
+            )
+            e.metric(
+                "Anomalías",
+                f"{u.get('n_anomalias', 'N/D')} ({u.get('pct_anomalias', 'N/D')}%)",
+            )
+        elif u and not u.get("viable"):
+            st.error(u.get("razon", "Segmentación no viable."))
+        else:
+            st.markdown(
+                '<div class="nota">Aún no hay segmentación. Pulsa <b>Segmentar ventas</b> '
+                "para agrupar el historial y detectar casos atípicos.</div>",
+                unsafe_allow_html=True,
+            )
+
+    u = S.get("uns")
+    if u and u.get("viable"):
+        sil = u.get("silueta")
+        if sil is None:
+            scores = u.get("silhouette_scores") or {}
+            sil = max(scores.values()) if scores else None
+        if sil is not None and sil < 0.25:
+            st.markdown(
+                '<div class="nota">La silueta es baja (&lt; 0.25): los segmentos son '
+                "débiles y deben leerse como exploratorios, no como categorías fijas "
+                "del negocio.</div>",
+                unsafe_allow_html=True,
+            )
+
+        t1, t2, t3, t4 = st.tabs(["Segmentos", "Mapa PCA", "Anomalías", "Multivariado"])
+
+        with t1:
+            resumen = u.get("resumen_clusters")
+            if resumen is not None and len(resumen):
+                data_table(resumen, 320)
+                z = resumen.copy()
+                z["cluster"] = z["cluster"].astype(str)
+                chart(
+                    px.bar(
+                        z, x="cluster", y="n_registros", color="cluster",
+                        title="Ventas por segmento",
+                        labels={"cluster": "Segmento", "n_registros": "Ventas"},
+                        color_discrete_sequence=COLORES,
+                    ),
+                    320,
+                )
+                st.caption(
+                    "El resultado económico y la tasa de devolución se muestran solo para "
+                    "interpretar el segmento; NO se usaron para formarlo."
+                )
+            else:
+                st.info("Reentrena para generar el perfil de los segmentos.")
+
+        with t2:
+            pca2 = u.get("pca_2d")
+            var = u.get("varianza_pca2")
+            if not var:
+                var = ((u.get("multivariado") or {}).get("pca") or {}).get("varianza_explicada")
+            if pca2 is not None and len(pca2):
+                z = pca2.copy()
+                z["cluster"] = z["cluster"].astype(str)
+                v1 = var[0] if var else 0
+                v2 = var[1] if var and len(var) > 1 else 0
+                chart(
+                    px.scatter(
+                        z, x="pca_1", y="pca_2", color="cluster",
+                        title=f"Proyección PCA (PC1 {v1:.1%} · PC2 {v2:.1%})",
+                        labels={"pca_1": "Componente 1", "pca_2": "Componente 2",
+                                "cluster": "Segmento"},
+                        opacity=0.65,
+                    ),
+                    420,
+                )
+                st.caption(
+                    "Cada punto es una venta. PCA reduce las variables de entrada a dos "
+                    "dimensiones para visualizar la separación de los segmentos."
+                )
+            else:
+                st.info("Reentrena para calcular la proyección PCA.")
+            cargas = ((u.get("multivariado") or {}).get("pca") or {}).get("cargas")
+            if cargas is not None and len(cargas):
+                st.write("**Cargas de los componentes (qué pesa en cada eje)**")
+                data_table(cargas.reset_index().rename(columns={"index": "variable"}), 260)
+
+        with t3:
+            an = u.get("anomalias")
+            if an is not None and len(an):
+                cols = [c for c in ["id_venta", "fecha_venta", "sku", "transportista",
+                                    "cluster", "score_anomalia"] if c in an]
+                tabla = an[cols].copy()
+                if "score_anomalia" in tabla:
+                    tabla["score_anomalia"] = tabla["score_anomalia"].round(3)
+                data_table(tabla.head(200), 380)
+                st.caption(
+                    "Mayor `score_anomalia` = patrón más alejado del resto. Revisar precio, "
+                    "unidades, publicación o transportista de esos casos."
+                )
+                st.download_button(
+                    "Descargar anomalías (CSV)",
+                    an[cols].to_csv(index=False).encode("utf-8-sig"),
+                    "anomalias.csv",
+                    mime="text/csv",
+                )
+            else:
+                st.info("No hay anomalías con el umbral actual o falta reentrenar.")
+
+        with t4:
+            multi = u.get("multivariado")
+            if multi and multi.get("aplica"):
+                st.markdown(f'<div class="ok">{multi["razon"]}</div>', unsafe_allow_html=True)
+                corr = multi.get("correlacion")
+                if corr is not None and len(corr):
+                    chart(
+                        px.imshow(
+                            corr, text_auto=True, aspect="auto",
+                            color_continuous_scale="RdBu", zmin=-1, zmax=1,
+                            title="Matriz de correlación",
+                        ),
+                        420,
+                    )
+                vif = multi.get("vif")
+                if vif is not None and len(vif):
+                    st.write("**VIF · redundancia entre variables**")
+                    data_table(vif, 300)
+                    st.caption(multi.get("colinealidad", ""))
+                pca = multi.get("pca") or {}
+                if pca.get("varianza_explicada"):
+                    var = pca["varianza_explicada"]
+                    st.write(
+                        f"**PCA:** PC1 explica {var[0]:.1%} de la varianza; "
+                        f"se necesitan {pca.get('n_componentes_80', 'N/D')} componentes "
+                        "para superar el 80 %."
+                    )
+            else:
+                st.info(multi.get("razon") if multi else "Reentrena para ver el análisis multivariado.")
+
+
 elif sec == "Recomendaciones inteligentes":
     page_head("recomendaciones", "Recomendaciones inteligentes", "Hallazgos accionables basados en los datos observados.")
     d = filtered()
@@ -1335,7 +1533,7 @@ elif sec == "Reportes":
     d = filtered()
 
     st.markdown("#### Descargas")
-    a, b, c = st.columns(3)
+    a, b, c, e = st.columns(4)
     with a:
         st.download_button(
             "Descargar datos con resultado económico",
@@ -1368,6 +1566,19 @@ elif sec == "Reportes":
             )
         else:
             st.button("Métricas de devoluciones", disabled=True, width="stretch")
+    with e:
+        uns = S.get("uns")
+        resumen_uns = uns.get("resumen_clusters") if uns and uns.get("viable") else None
+        if resumen_uns is not None and len(resumen_uns):
+            st.download_button(
+                "Descargar segmentos",
+                resumen_uns.to_csv(index=False).encode("utf-8-sig"),
+                "segmentos.csv",
+                mime="text/csv",
+                width="stretch",
+            )
+        else:
+            st.button("Segmentos", disabled=True, width="stretch")
 
     st.divider()
     st.markdown("#### Resumen de la sesión")
@@ -1379,6 +1590,7 @@ elif sec == "Reportes":
                 "Fuente de datos", "Ventas en el filtro", "SKUs", "Ingresos por producto",
                 "Resultado económico", "Tipo de resultado", "Devoluciones verificadas",
                 "Tasa de devolución verificable", "Modelo de rentabilidad", "Modelo de devoluciones",
+                "Segmentación no supervisada",
             ],
             "Valor": [
                 S.get("source", "datos"),
@@ -1391,6 +1603,7 @@ elif sec == "Reportes":
                 pct(stats["tasa_dev"]),
                 S.get("prof", {}).get("mejor", "No entrenado"),
                 S.get("ret", {}).get("mejor", "No entrenado"),
+                S.get("uns", {}).get("mejor", "No entrenado"),
             ],
         }
     )

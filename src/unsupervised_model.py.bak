@@ -1,0 +1,119 @@
+"""Aprendizaje no supervisado: segmentación (KMeans) y detección de anomalías (IsolationForest)."""
+from pathlib import Path
+import joblib
+import numpy as np
+import pandas as pd
+from sklearn.cluster import KMeans
+from sklearn.ensemble import IsolationForest
+from sklearn.metrics import silhouette_score
+
+from src import features as feat
+
+MODEL_PATH = Path("models/unsupervised.joblib")
+
+
+def _select_best_k(X_trans: np.ndarray, k_min: int = 2, k_max: int = 6, random_state: int = 42) -> tuple[int, dict]:
+    n_samples = X_trans.shape[0]
+    upper = min(k_max, n_samples - 1)
+    scores = {}
+    best_k = min(3, upper) if upper >= 2 else 1
+    best_score = -1.0
+
+    for k in range(k_min, upper + 1):
+        km = KMeans(n_clusters=k, n_init=10, random_state=random_state)
+        labels = km.fit_predict(X_trans)
+        if len(set(labels)) > 1:
+            score = float(silhouette_score(X_trans, labels))
+            scores[k] = round(score, 4)
+            if score > best_score:
+                best_score = score
+                best_k = k
+
+    return best_k, scores
+
+
+def fit_unsupervised(df: pd.DataFrame, n_clusters: int | None = None, random_state: int = 42) -> dict:
+    """Entrena KMeans + IsolationForest sobre las features pre-venta."""
+    X_raw, num_cols, cat_cols = feat.make_features(df)
+    if len(X_raw) < 10:
+        return {"viable": False, "razon": "Menos de 10 filas disponibles para aprendizaje no supervisado."}
+
+    prep = feat.preprocessor(num_cols, cat_cols)
+    X_trans = prep.fit_transform(X_raw)
+
+    if n_clusters is None:
+        best_k, sil_scores = _select_best_k(X_trans, random_state=random_state)
+    else:
+        best_k = max(2, min(n_clusters, len(X_raw) - 1))
+        km_tmp = KMeans(n_clusters=best_k, n_init=10, random_state=random_state)
+        labels_tmp = km_tmp.fit_predict(X_trans)
+        sil_scores = (
+            {best_k: round(float(silhouette_score(X_trans, labels_tmp)), 4)}
+            if len(set(labels_tmp)) > 1
+            else {}
+        )
+
+    kmeans = KMeans(n_clusters=best_k, n_init=10, random_state=random_state)
+    cluster_labels = kmeans.fit_predict(X_trans)
+
+    iso = IsolationForest(contamination="auto", random_state=random_state)
+    iso_pred = iso.fit_predict(X_trans)  # 1 = normal, -1 = anomalía
+    anomaly_scores = -iso.score_samples(X_trans)  # mayor valor = más anómalo
+
+    perfil = X_raw.copy()
+    perfil["cluster"] = cluster_labels
+    perfil["es_anomalia"] = (iso_pred == -1)
+
+    agg_dict = {c: "mean" for c in ["unidades", "precio_unitario", "ingreso_esperado"] if c in perfil}
+    agg_dict["cluster"] = "count"
+    agg_dict["es_anomalia"] = "mean"
+
+    resumen = (
+        perfil.groupby("cluster", as_index=False)
+        .agg(agg_dict)
+        .rename(columns={"cluster": "n_registros", "es_anomalia": "tasa_anomalias"})
+    )
+    resumen.insert(0, "cluster", range(best_k))
+
+    bundle = {
+        "preprocessor": prep,
+        "kmeans": kmeans,
+        "isolation_forest": iso,
+        "num_cols": num_cols,
+        "cat_cols": cat_cols,
+        "best_k": best_k,
+        "silhouette_scores": sil_scores,
+    }
+
+    return {
+        "viable": True,
+        "n_registros": len(X_raw),
+        "best_k": best_k,
+        "silhouette_scores": sil_scores,
+        "n_anomalias": int((iso_pred == -1).sum()),
+        "pct_anomalias": round(float((iso_pred == -1).mean() * 100), 2),
+        "resumen_clusters": resumen,
+        "labels": cluster_labels,
+        "is_anomaly": (iso_pred == -1),
+        "anomaly_score": anomaly_scores,
+        "bundle": bundle,
+    }
+
+
+def save_model(result: dict, path: Path = MODEL_PATH) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    joblib.dump(result["bundle"], path)
+    return path
+
+
+def predict_unsupervised(df: pd.DataFrame, path: Path = MODEL_PATH) -> pd.DataFrame:
+    """Asigna clúster y puntuación de anomalía a datos nuevos."""
+    bundle = joblib.load(path)
+    X_raw, _, _ = feat.make_features(df)
+    X_trans = bundle["preprocessor"].transform(X_raw)
+    out = pd.DataFrame(index=df.index)
+    out["cluster"] = bundle["kmeans"].predict(X_trans)
+    iso_pred = bundle["isolation_forest"].predict(X_trans)
+    out["es_anomalia"] = (iso_pred == -1)
+    out["score_anomalia"] = -bundle["isolation_forest"].score_samples(X_trans)
+    return out

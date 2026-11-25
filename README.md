@@ -1,8 +1,9 @@
 # Sistema Inteligente de Predicción de Rentabilidad y Riesgo de Devoluciones (Mercado Libre)
 
 Interfaz Streamlit + modelos de machine learning para analizar ventas de Mercado Libre:
-resultado económico por venta, riesgo de devoluciones, comparación de modelos y
-recomendaciones por SKU/transportista. El procesamiento es local y elimina datos personales.
+resultado económico por venta, riesgo de devoluciones, **segmentación no supervisada**,
+comparación de modelos y recomendaciones por SKU/transportista. El procesamiento es
+local y elimina datos personales.
 
 ## Inicio rápido con Docker (recomendado)
 
@@ -22,7 +23,7 @@ reconstrucciones**:
 | Ruta del host | Ruta en el contenedor | Contenido |
 |---|---|---|
 | `./data` | `/app/data` | `data/current/` con el dataset y costos cargados + metadatos |
-| `./models` | `/app/models` | `profitability.joblib` y `returns.joblib` entrenados |
+| `./models` | `/app/models` | `profitability.joblib`, `returns.joblib` y `unsupervised.joblib` |
 
 Al abrir la app se recuperan automáticamente la última sesión de datos y los modelos
 guardados (aparecen como *guardado* en la barra lateral). Para reiniciar de cero:
@@ -65,6 +66,7 @@ streamlit run app.py
 
 - Interfaz: sube tu Excel/CSV en *Carga de datos* (opcionalmente `costos.csv` con `sku,costo_unitario`).
 - Terminal: `python scripts/train.py data/mi_reporte.xlsx [data/costos.csv]`
+- Pruebas: `python -m unittest discover -s tests -v`
 - Prueba con datos simulados: `python scripts/make_demo_data.py` y luego
   `python scripts/train.py data/demo_simulado.csv`
   (las métricas de esos datos **NO** son resultados reales).
@@ -73,7 +75,9 @@ streamlit run app.py
 
 1. Carga el reporte con `data_processing.load_file()` y lo limpia con `data_processing.clean()`, imprimiendo columnas finales y el registro (`log`) de limpieza.
 2. Muestra el resumen de calidad (`quality_report`, sin `faltantes_pct` en consola) y el diagnóstico de devoluciones (`returns_model.diagnose()`).
-3. Ejecuta `profitability_model.train(df, costs)` y `returns_model.train(df)`, imprimiendo `tipo_resultado`, conteos de `train`/`test`, métricas, top 8 de importancia o el motivo (`razon`) cuando un modelo no es viable.
+3. Ejecuta `profitability_model.train(df, costs)` y `returns_model.train(df)`, imprimiendo métricas, el mejor modelo, el **criterio de selección** (¿supera al baseline?) y el top 8 de importancia, o el motivo (`razon`) cuando un modelo no es viable.
+4. Ejecuta `unsupervised_model.fit_unsupervised(df)`: segmentación KMeans, anomalías y PCA; guarda `models/unsupervised.joblib`.
+5. Imprime el análisis multivariado (`multivariate.multivariate_report`): correlación, VIF, varianza explicada y aplicabilidad.
 
 ### Formato esperado de archivos de entrada
 
@@ -87,9 +91,10 @@ streamlit run app.py
 3. **Análisis exploratorio** — productos, envíos, precios y resultado económico.
 4. **Rentabilidad** — entrenamiento, métricas, importancia y real vs predicho.
 5. **Predicción de devoluciones** — bandas de riesgo relativo y descarga por venta.
-6. **Comparación de modelos** — métricas lado a lado (RMSE / ROC-AUC).
-7. **Recomendaciones inteligentes** — hallazgos accionables por SKU y transportista.
-8. **Reportes** — exportación de datos, métricas y resumen de la sesión.
+6. **Comparación de modelos** — métricas lado a lado (RMSE / ROC-AUC) y criterio de selección.
+7. **Segmentación y anomalías** — KMeans, IsolationForest, mapa PCA y análisis multivariado (correlación/VIF).
+8. **Recomendaciones inteligentes** — hallazgos accionables por SKU y transportista.
+9. **Reportes** — exportación de datos, métricas, segmentos y resumen de la sesión.
 
 ## Decisiones metodológicas
 
@@ -107,6 +112,23 @@ streamlit run app.py
 - **Privacidad:** columnas personales (comprador, domicilio, documentos, seguimiento, etc.)
   se eliminan al cargar.
 - **Importancia de variables:** permutación (asociación, no causalidad).
+- **Selección de modelos:** regla única en `src/selection.py`. Regresión → menor RMSE;
+  clasificación → mayor ROC-AUC; en ambos casos debe superar al baseline (≥1 % y
+  ≥0.01 respectivamente) o se marca como no confiable.
+- **No supervisado:** KMeans elige `k` por silueta; IsolationForest marca el 5 % más
+  atípico. El resultado económico se usa solo para interpretar los segmentos.
+- **Multivariado:** correlación, VIF y PCA exploratorios. No se usa MANOVA porque los
+  datos son un registro completo, no una muestra aleatoria.
+
+### Resultado con datos simulados
+
+| Tarea | Mejor modelo | Métrica | Baseline |
+|---|---|---|---|
+| Rentabilidad | Random Forest | RMSE 605.39 · R² 0.438 | RMSE 814.28 |
+| Devoluciones | Regresión logística | ROC-AUC 0.614 | 0.500 |
+| Segmentación | KMeans k=2 | Silueta 0.206 (débil) | — |
+
+Ver [auditoría de modelos](docs/05-auditoria-modelos.md) para hallazgos y limitaciones.
 
 ## Documentación técnica
 
@@ -116,16 +138,21 @@ Para detalles de implementación, contratos de módulos y especificaciones de mo
 - [Diccionario de datos y privacidad](docs/02-datos-y-privacidad.md) — esquema esperado, limpieza, anonimización y persistencia.
 - [Especificación de modelos ML](docs/03-modelos-ml.md) — ingeniería de variables, algoritmos, validación temporal y bandas de riesgo.
 - [Motor de recomendaciones y operación](docs/04-recomendaciones-y-operacion.md) — lógica de hallazgos por SKU/transportista y troubleshooting.
+- [Auditoría de modelos y análisis multivariado](docs/05-auditoria-modelos.md) — hallazgos, criterio de selección, mejor modelo y limitaciones.
 
 ## Estructura
 
 ```
 app.py                  Interfaz Streamlit (UI + persistencia)
-src/                    data_processing, features, profitability_model,
-                        returns_model, evaluation, recommendations
+src/                    data_processing, features, evaluation,
+                        profitability_model, returns_model,
+                        unsupervised_model, multivariate, selection,
+                        recommendations
 scripts/                make_demo_data.py, train.py
+tests/                  unittest del criterio de selección, multivariado
+                        y modelo no supervisado
 data/                   demo_simulado.csv + current/ (sesión persistida)
-models/                 modelos .joblib entrenados
+models/                 profitability.joblib, returns.joblib, unsupervised.joblib
 Dockerfile              imagen de producción (usuario no root + healthcheck)
 docker-compose.yml      servicio con volúmenes persistentes
 .streamlit/config.toml  tema y configuración del servidor

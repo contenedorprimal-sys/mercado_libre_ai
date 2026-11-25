@@ -18,6 +18,7 @@ from sklearn.tree import DecisionTreeClassifier
 
 from .evaluation import classification_metrics, importance_table, temporal_split
 from .features import make_features, preprocessor
+from .selection import choose_model
 
 MIN_POS, MIN_NEG, MIN_POS_TEST, VENTANA_DIAS = 30, 100, 5, 30
 
@@ -96,24 +97,35 @@ def train(df: pd.DataFrame, models_dir="models") -> dict:
     Xte, _, _ = make_features(te)
     ytr, yte = tr.devolucion, te.devolucion
     pw = (ytr == 0).sum() / max((ytr == 1).sum(), 1)
-    rows, fitted = [], {}
+    rows, fitted, errores = [], {}, {}
     for name, est in _models(pw).items():
-        pipe = Pipeline([("prep", preprocessor(num, cat)), ("model", est)]).fit(Xtr, ytr)
+        try:
+            pipe = Pipeline([("prep", preprocessor(num, cat)), ("model", est)]).fit(Xtr, ytr)
+        except Exception as exc:          # una librería opcional no debe tumbar el resto
+            errores[name] = str(exc)
+            continue
         proba = pipe.predict_proba(Xte)[:, 1]
         rows.append({"Modelo": name, **classification_metrics(yte, (proba >= .5).astype(int), proba)})
         fitted[name] = pipe
+    if not fitted:
+        return {"viable": False, "diagnostico": diag,
+                "razon": "Ningún modelo pudo entrenarse.", "errores": errores}
     metrics = pd.DataFrame(rows)
-    cand = metrics[~metrics["Modelo"].str.startswith("Baseline")].sort_values("ROC-AUC", ascending=False)
-    best = cand["Modelo"].iloc[0]
+    seleccion = choose_model(metrics, "classification")
+    best = seleccion["best"] or metrics["Modelo"].iloc[0]
     proba = fitted[best].predict_proba(Xte)[:, 1]
     umbrales = {"medio": float(np.quantile(proba, .5)), "alto": float(np.quantile(proba, .8))}
     imp = importance_table(fitted[best], Xte, yte, "roc_auc")
     Path(models_dir).mkdir(exist_ok=True)
     joblib.dump({"pipeline": fitted[best], "nombre": best, "umbrales": umbrales,
-                 "metrics": metrics}, Path(models_dir) / "returns.joblib")
+                 "seleccion": seleccion, "metrics": metrics},
+                Path(models_dir) / "returns.joblib")
     return {"viable": True, "diagnostico": diag, "metrics": metrics, "mejor": best,
             "importancia": imp, "umbrales": umbrales, "n_train": len(tr), "n_test": len(te),
-            "tasa_train": float(ytr.mean()), "tasa_test": float(yte.mean())}
+            "tasa_train": float(ytr.mean()), "tasa_test": float(yte.mean()),
+            "seleccion": seleccion, "confiable": seleccion["confiable"],
+            "advertencia": None if seleccion["confiable"] else seleccion["reason"],
+            "errores": errores}
 
 
 def risk_band(p, umbrales):

@@ -19,6 +19,7 @@ from sklearn.pipeline import Pipeline
 
 from .evaluation import importance_table, regression_metrics, temporal_split
 from .features import make_features, preprocessor
+from .selection import choose_model
 
 MIN_ROWS = 100
 COMPONENTES = ["ingresos_productos", "ingresos_envio", "cargo_venta", "costos_envio",
@@ -65,22 +66,33 @@ def train(df: pd.DataFrame, costs=None, models_dir="models") -> dict:
     Xtr, num, cat = make_features(tr)
     Xte, _, _ = make_features(te)
     ytr, yte = tr["resultado_economico"], te["resultado_economico"]
-    rows, fitted = [], {}
+    rows, fitted, errores = [], {}, {}
     for name, est in _models().items():
-        pipe = Pipeline([("prep", preprocessor(num, cat)), ("model", est)]).fit(Xtr, ytr)
+        try:
+            pipe = Pipeline([("prep", preprocessor(num, cat)), ("model", est)]).fit(Xtr, ytr)
+        except Exception as exc:          # una librería opcional no debe tumbar el resto
+            errores[name] = str(exc)
+            continue
         rows.append({"Modelo": name, **regression_metrics(yte, pipe.predict(Xte))})
         fitted[name] = pipe
+    if not fitted:
+        return {"viable": False, "razon": "Ningún modelo pudo entrenarse.", "errores": errores}
     metrics = pd.DataFrame(rows).sort_values("RMSE").reset_index(drop=True)
-    best = metrics.loc[metrics["Modelo"] != "Baseline (media)", "Modelo"].iloc[0]
+    seleccion = choose_model(metrics, "regression")
+    best = seleccion["best"] or metrics["Modelo"].iloc[0]
     imp = importance_table(fitted[best], Xte, yte, "neg_root_mean_squared_error")
     pred = te[["fecha_venta"] + [c for c in ["sku"] if c in te]].copy()
     pred["real"], pred["predicho"] = yte.values, fitted[best].predict(Xte)
     Path(models_dir).mkdir(exist_ok=True)
     joblib.dump({"pipeline": fitted[best], "nombre": best, "metrics": metrics,
+                 "seleccion": seleccion,
                  "tipo_resultado": d["tipo_resultado"].value_counts().to_dict()},
                 Path(models_dir) / "profitability.joblib")
     return {"viable": True, "metrics": metrics, "mejor": best, "importancia": imp,
             "predicciones": pred, "n_train": len(tr), "n_test": len(te),
             "periodo_train": (tr.fecha_venta.min(), tr.fecha_venta.max()),
             "periodo_test": (te.fecha_venta.min(), te.fecha_venta.max()),
+            "seleccion": seleccion, "confiable": seleccion["confiable"],
+            "advertencia": None if seleccion["confiable"] else seleccion["reason"],
+            "errores": errores,
             "tipo_resultado": d["tipo_resultado"].value_counts().to_dict()}
